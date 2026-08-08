@@ -113,6 +113,11 @@ end
 
 local bundled = is_bundled()
 
+-- Before the unpack rather than after it. The entries are relative, so they resolve against whatever
+-- the working directory is at require time, and setting it here is what lets the block below reach
+-- core.log the moment it knows where the log belongs.
+package.path = "./?.lua;./?/init.lua;" .. package.path
+
 if bundled then
   local root = (os.getenv("LOCALAPPDATA") or os.getenv("TEMP")):gsub("\\", "/")
   local hub  = root .. "/WarcraftXL/hub"
@@ -131,29 +136,14 @@ if bundled then
   local live, why = choose(hub, dst, version())
   uv.chdir(live)
 
-  -- The shipped binary is a GUI-subsystem PE, so there is no console for `print` to reach. Without
-  -- somewhere to put it, a failure before the window opens is indistinguishable from nothing
-  -- happening at all.
-  local log = io.open(live .. "/hub.log", "w")
-  if log then
-    print = function(...)
-      local parts = {}
-      for i = 1, select("#", ...) do parts[i] = tostring((select(i, ...))) end
-      log:write(table.concat(parts, "\t"), "\n")
-      log:flush()
-    end
-    -- Through print rather than straight onto the handle, so it is flushed. A line written to the
-    -- buffer and never flushed is lost if the process is killed, which is exactly the run whose log
-    -- anyone would want to read.
-    print("wxl-hub " .. version())
-    -- Two launches of the same executable can be running different code, and this is where anyone
-    -- reading a bug report finds out which.
-    if live ~= dst then print("payload " .. (slurp(live .. "/PAYLOAD") or "?")) end
-    if why then print(why) end
-  end
+  local log = require("core.log")
+  log.install(live .. "/hub.log", "main")
+  log.banner(("wxl-hub %s  %s"):format(version(), os.date("%Y-%m-%d %H:%M:%S")))
+  -- Two launches of the same executable can be running different code, and this is where anyone
+  -- reading a bug report finds out which.
+  print("payload " .. (slurp(live .. "/PAYLOAD") or "?"))
+  if why then print(why) end
 end
-
-package.path = "./?.lua;./?/init.lua;" .. package.path
 
 -- Templates are unpacked once per version into a folder named after that version, so nothing under
 -- it can change while the app runs. Saying so lets core.view skip even the stat it would otherwise

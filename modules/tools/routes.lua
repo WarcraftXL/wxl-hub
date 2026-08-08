@@ -1,60 +1,28 @@
-local tools    = dofile("modules/tools/models/tools.lua")
-local page     = require("core.page")
-local history  = require("core.history")
-local mediator = require("core.mediator")
+--[[
+  Tools, reduced to its entry in the navigation.
 
-local function find(id)
-  for _, t in ipairs(tools.tools) do if t.id == id then return t end end
-end
+  The pipeline this page hosted is moving into the launcher itself. Listing six cards that each open
+  onto "not built yet" said less than one honest dead end, so every path under the mount answers with
+  that dead end instead.
 
-local function take(list, n)
-  local out = {}
-  for i = 1, math.min(n, #list) do out[i] = list[i] end
-  return out
-end
+  The entry stays in the bar rather than the module being parked, because a module that is parked
+  disappears from the navigation entirely and the work stops being visible to the one person it is
+  queued for. Behind developer mode, so nobody else meets it.
+]]
 
-return function(router, mod, ctx)
-  local view = mod.view
+local page = require("core.page")
 
-  mediator.provide("tools.list", function(n) return take(tools.tools, n or #tools.tools) end)
-  mediator.provide("tools.get", find)
+local NOT_BUILT = {
+  title = "Tools are being rebuilt",
+  text  = "The asset pipeline is moving into the launcher itself. Until it lands there is nothing "
+       .. "here to drive, and the store and the module listings are the parts that work.",
+  code  = "Not built yet",
+}
 
-  mediator.contribute("home.section", {
-    id = "tools", order = 40,
-    render = function()
-      return view.render("home_section", { tools = take(tools.tools, 4) })
-    end,
-  })
+return function(router)
+  local function dead_end(req, res) res:html(page.notice(NOT_BUILT)) end
 
-  router:get("/tools", function(req, res)
-    res:html(page.render(view.render("tools", {
-      tools = tools.tools,
-      available = mod.available,
-      missing = mod.missing_tools,
-      trail = { { "Home", "/" }, { "Tools" } },
-    }), { title = "Tools", active = "tools" }))
-  end)
-
-  router:get("/tools/:id", function(req, res)
-    local t = find(req.params.id)
-    if not t then
-      return res:html(page.notice {
-        title = "No such tool",
-        text  = "Nothing is registered under /tools/" .. req.params.id .. ".",
-      })
-    end
-
-    history.record {
-      kind = "tool", ref = t.id, href = "/tools/" .. t.id,
-      title = t.name, subtitle = t.blurb, icon = t.icon,
-    }
-
-    res:html(page.notice {
-      title = "This one is still being surveyed",
-      text  = t.name .. " arrives with milestone M3, once the job runner can spawn the converters "
-           .. "and stream their progress. Until then the store and the module listings are the "
-           .. "parts that work.",
-      code  = "Not built yet",
-    })
-  end)
+  router:get("/tools", dead_end)
+  -- Named, because the router's splat is `*name` and a bare star is matched as a literal.
+  router:get("/tools/*rest", dead_end)
 end

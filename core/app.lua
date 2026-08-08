@@ -277,7 +277,14 @@ function M.run()
     local uv2 = require("uv")
     uv2.chdir(cwd)
     package.path = "./?.lua;./?/init.lua;" .. package.path
-    require("core.app").serve(port, token)
+
+    require("core.log").install(cwd .. "/hub.log", "server")
+
+    local ok, err = xpcall(function()
+      require("core.app").serve(port, token)
+    end, debug.traceback)
+    if not ok then print("SERVER FAILED\n" .. tostring(err)) end
+
     uv2.run()
   end, port, token, uv.cwd())
 
@@ -287,6 +294,9 @@ function M.run()
     title = "WarcraftXL Hub", width = 1280, height = 880, debug = true,
   }
   win:icon("assets/logo.ico")
+
+  win:html('<!doctype html><meta name="color-scheme" content="dark">'
+        .. '<body style="margin:0;background:#101216"></body>')
 
   -- The one thing the UI thread does that is not "show a page". A folder dialog is modal and has to
   -- be owned by the window, so it can only run here; the worker thread has no window to parent to
