@@ -1,0 +1,56 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Welcome to WarcraftXL</title>
+<meta http-equiv="Content-Security-Policy" content="<%= csp %>">
+<link rel="icon" href="/static/logo.png">
+<script src="/vendor/htmx.min.js"></script>
+<link rel="stylesheet" href="<%= stylesheet %>">
+<%- render("core:pickfolder", {}) %>
+
+<% --[[ A page of its own, like the profile question and for the same reason: none of what the hub
+        shows makes sense before these answers exist. Every field saves as it is filled in rather
+        than on submit, so closing the window half way through loses nothing and the button at the
+        end only records that the question was asked. ]] %>
+<div class="choose">
+  <div class="cbox panel welcome">
+    <img src="/static/logo.png" alt="">
+    <h1>Welcome to Warcraft<em>XL</em></h1>
+    <p>Three answers and you are in. All of them change later, in Settings.</p>
+
+    <div class="wstep">
+      <label for="wname">What should we call you?</label>
+      <div class="val">
+        <input id="wname" name="value" value="<%= name %>" maxlength="40" autocomplete="off"
+               placeholder="Your name"
+               hx-post="/welcome/name" hx-trigger="change, keyup changed delay:500ms"
+               hx-swap="none">
+      </div>
+      <span class="whint">It names your profile. A second profile can have a second name.</span>
+    </div>
+
+    <div class="wstep">
+      <label for="wclient">Where is your 3.3.5a client?</label>
+      <div class="val">
+        <input id="wclient" name="value" value="<%= client_path %>" autocomplete="off"
+               placeholder="D:\World of Warcraft"
+               hx-post="/welcome/client" hx-trigger="change"
+               hx-target="#wverdict" hx-swap="outerHTML">
+        <button class="browse" type="button" onclick="pickFolder(this)">Browse</button>
+      </div>
+      <%- render("welcome_client", { client = client }) %>
+    </div>
+
+    <div class="wstep wrow">
+      <div>
+        <label>Developer mode</label>
+        <span class="whint">Adds the author-facing tools to the bar. Leave it off unless you are
+          building modules.</span>
+      </div>
+      <a class="switch <%= developer and 'on' or '' %>" role="button" tabindex="0"
+         hx-post="/welcome/dev" hx-swap="outerHTML"></a>
+    </div>
+
+    <button class="install" hx-post="/welcome/done" hx-swap="none">Start the hub</button>
+    <p class="cfoot">Nothing here is required. The store works without a client.</p>
+  </div>
+</div>

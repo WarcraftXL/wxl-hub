@@ -60,6 +60,16 @@ local OPEN_READWRITE, OPEN_CREATE = 0x00000002, 0x00000004
 
 local INTEGER, FLOAT, TEXT, NULL_T = 1, 2, 3, 5
 
+-- SQLITE_TRANSIENT, which is the pointer -1 rather than a number: it tells sqlite to copy the bytes
+-- it was handed, so the Lua string behind them may be collected the moment the bind returns.
+--
+-- Built once, and through intptr_t, because that is the only spelling that survives the trace
+-- compiler. `ffi.cast("void*", -1)` gives the full-width -1 while the code is interpreted and
+-- 0x00000000ffffffff once the path is compiled, which is neither of the two values sqlite treats as
+-- a marker. It takes it for a real destructor and calls it, and the process dies executing address
+-- 0xffffffff a few hundred queries into a session.
+local TRANSIENT = ffi.cast("void*", ffi.cast("intptr_t", -1))
+
 local C
 local M = {}
 
@@ -158,9 +168,7 @@ function Stmt:bind(...)
       else                             rc = C.sqlite3_bind_double(self._s, i, v) end
     elseif t == "boolean" then         rc = C.sqlite3_bind_int64(self._s, i, v and 1 or 0)
     elseif t == "string" then
-      -- -1 is SQLITE_TRANSIENT: sqlite copies the bytes, so the Lua string may be collected the
-      -- moment this returns. Passing NULL here instead is the classic use-after-free in FFI bindings.
-      rc = C.sqlite3_bind_text(self._s, i, v, #v, ffi.cast("void*", -1))
+      rc = C.sqlite3_bind_text(self._s, i, v, #v, TRANSIENT)
     else
       error(("sqlite: cannot bind a %s at position %d"):format(t, i), 3)
     end

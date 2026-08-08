@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>WarcraftXL Hub</title>
+<meta http-equiv="Content-Security-Policy" content="<%= csp %>">
+<link rel="icon" href="/static/logo.png">
+<script src="/vendor/htmx.min.js"></script>
+<link rel="stylesheet" href="<%= stylesheet %>">
+
+<div class="splash launch">
+  <img class="logo" src="/static/logo.png" alt="">
+  <div class="name">Warcraft<em>XL</em></div>
+
+  <div id="step"><%- render("launchstep", { state = state, known = known, pct = pct, size = size }) %></div>
+</div>
+
+<% --[[ Polls faster than the application's splash does. This window exists for a second or two and
+        a quarter of that spent on a stale caption is a quarter of the whole thing. ]] %>
+<div hx-get="/status"
+     hx-trigger="load delay:150ms, every 250ms"
+     hx-target="#step"
+     hx-swap="innerHTML"></div>

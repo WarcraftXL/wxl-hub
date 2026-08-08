@@ -156,6 +156,15 @@ function M.open(opts)
     _callbacks = {},
   }, Window)
 
+  -- First, and deliberately before the title and the size.
+  --
+  -- `webview_create` makes the window visible. Nothing paints it yet, because painting needs the
+  -- message loop and that does not start until `run`, but the gap is the only place a white frame
+  -- can come from and every call made in it widens the gap. Hiding here rather than in the caller is
+  -- the difference between "hidden before the loop starts" and "hidden a few statements later".
+  if opts.hidden then self:hide() end
+  if opts.background then self:background(opts.background[1], opts.background[2], opts.background[3]) end
+
   if opts.title then self:title(opts.title) end
   if opts.width then self:size(opts.width, opts.height or 600, opts.hint) end
   return self

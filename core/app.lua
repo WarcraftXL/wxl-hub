@@ -21,11 +21,18 @@ local M = {}
 -- destroys a click before it can be sent.
 --
 -- Anything served out of a static directory is already past this, because static files are resolved
--- before `before` runs. This list is for the two the shell serves from code.
+-- before `before` runs. This list is for the ones the shell serves from code.
 local UNGATED = {
   ["/boot/status"] = true,
   ["/theme.css"]   = true,
 }
+
+--- A job reports on work the page that started it is still waiting for, so it has to be readable
+--- from behind a gate: the first-run form sets the client up before it has answered the question
+--- that raised the gate. Not a key in the table above because the id is in the path.
+local function ungated(path)
+  return UNGATED[path] ~= nil or path:find("^/jobs/") ~= nil
+end
 
 
 --- Runs on the worker thread. Owns the database, the modules and the socket.
@@ -50,7 +57,6 @@ function M.serve(port, token, opts)
   local jobs     = require("core.jobs")
   local notify   = require("core.notify")
   local launch   = require("core.launch")
-  local update   = require("core.update")
   local mediator = require("core.mediator")
   require("core.helpers").install()
 
@@ -121,13 +127,7 @@ function M.serve(port, token, opts)
   local shown = { idx = -1, step = nil }
 
   app.before = function(req, res)
-    -- A request reaching here proves the tree the bootstrap picked can load every module, open the
-    -- database and bind its socket. That is what an update has to demonstrate before it is kept, so
-    -- this is where it is declared healthy. Idempotent, and first: the splash is a request too, and
-    -- an update that only ever got as far as the splash still booted.
-    update.confirm()
-
-    if UNGATED[req.path] then return false end
+    if ungated(req.path) then return false end
 
     if not boot.ready() then
       local step, done, total = boot.phase()
@@ -139,11 +139,6 @@ function M.serve(port, token, opts)
       }))
       return true
     end
-
-    -- Past the splash, so the startup fetch has landed and there is a real page coming to carry a
-    -- toast. Idempotent, and it queues rather than renders: what it found has no request of its own
-    -- to ride on, because the fetch that found it was answering nobody.
-    update.announce()
 
     -- A module may need an answer before the app opens: today it is which profile to use, tomorrow
     -- it could be a licence or a first-run path. Core knows only that a gate can exist and that it
@@ -280,7 +275,7 @@ function M.run()
     uv2.chdir(cwd)
     package.path = "./?.lua;./?/init.lua;" .. package.path
 
-    require("core.log").install(cwd .. "/hub.log", "server")
+    require("core.log").install(require("core.release").log(), "server")
 
     local ok, err = xpcall(function()
       require("core.app").serve(port, token)
@@ -292,15 +287,13 @@ function M.run()
 
   webview.setup("deps/webview")
 
+  -- Hidden and dark from the moment it exists, which is the only way there is no white frame: the
+  -- window is created visible and nothing the caller does afterwards is early enough.
   local win = webview.open {
     title = "WarcraftXL Hub", width = 1280, height = 880, debug = true,
+    hidden = true, background = { 0x10, 0x12, 0x16 },
   }
   win:icon("assets/logo.ico")
-
-  -- Off screen until a document has been parsed, and dark underneath for every moment after that
-  -- where the frame is visible and the view has not caught up.
-  win:hide()
-  win:background(0x10, 0x12, 0x16)
   print("window created, hidden until the first page reports in")
 
   -- The one thing the UI thread does that is not "show a page". A folder dialog is modal and has to
@@ -327,12 +320,26 @@ function M.run()
   --
   -- It fires on the browser's own error page too, so a hub whose server never came up still shows a
   -- window saying so instead of nothing at all.
+  -- `init` runs on every navigation, so this fires on each document. Only the first one is news;
+  -- the rest would just be a line saying the window is still visible.
+  local visible = false
   win:bind("wxlReady", function()
     win:show()
-    print("window shown")
+    if not visible then visible = true; print("window shown") end
     return "null"
   end)
   win:init("addEventListener('DOMContentLoaded',function(){window.wxlReady&&wxlReady()})")
+
+  -- Hidden again, and not out of superstition. `webview_get_native_handle` can still answer nothing
+  -- straight after create, and a hide that found no handle did nothing at all: that is the window
+  -- that turned up showing its background colour and no page. Here the handle certainly exists, and
+  -- the message loop has not started, so nothing has been able to paint yet either way.
+  win:hide()
+
+  -- And only now is there something at the other end to navigate to.
+  if not require("core.server").wait(port) then
+    print("the server did not come up in time, showing whatever the browser makes of that")
+  end
 
   win:navigate(("http://127.0.0.1:%d/?token=%s"):format(port, token))
   print(("navigating to 127.0.0.1:%d"):format(port))

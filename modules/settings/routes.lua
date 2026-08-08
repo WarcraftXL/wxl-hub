@@ -16,9 +16,7 @@ local cache    = require("core.cache")
 local boot     = require("core.boot")
 local migrate  = require("core.migrate")
 local modules  = require("core.modules")
-local update   = require("core.update")
 local release  = require("core.release")
-local jobs     = require("core.jobs")
 
 local function human_bytes(n)
   if n < 1024 then return n .. " B" end
@@ -68,20 +66,10 @@ return function(router, mod, ctx)
   -- apart and neither can anything else.
   local OWN = {
     { id = "about", label = "About", group = "Setup", order = 10, render = function()
-        local offer = update.available()
         return view.render("sec_about", {
-          payload   = release.payload,
+          version   = release.version,
           build     = release.build,
           installed = release.installed,
-          staged    = update.staged(),
-          available = offer and {
-            version = offer.version,
-            notes   = offer.notes,
-            size    = jobs.size(offer.size or 0),
-          } or nil,
-          -- Told apart from "up to date", because a hub that could not reach GitHub knows nothing
-          -- and saying it is current would be inventing an answer.
-          known     = boot.hub ~= nil,
         })
       end },
 
@@ -175,20 +163,4 @@ return function(router, mod, ctx)
     res:html('<span class="ok">cleared, restart to refetch</span>')
   end)
 
-  -- Answers with the job element, which then polls itself through /jobs/:id like every other
-  -- transfer in the app. Nothing here waits for the download.
-  router:post("/settings/update/install", function(req, res)
-    local job, why = update.start()
-    if not job then
-      return res:html(view.render("core:job", { job = { state = "failed", error = why } }))
-    end
-    res:html(view.render("core:job", { job = jobs.view(job) }))
-  end)
-
-  -- The whole page comes back rather than a line of it: discarding changes what the section says
-  -- about itself, and there would be nothing left for a partial swap to replace.
-  router:post("/settings/update/discard", function(req, res)
-    update.discard()
-    res:html(section(sections(), "about").render())
-  end)
 end

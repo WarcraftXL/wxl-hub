@@ -1,0 +1,30 @@
+<% --[[ The one thing HTML cannot do: ask Windows for a folder. `window.wxlPickFolder` is bound on the
+        Lua side and runs the native dialog on the UI thread, the only thread allowed to own a modal
+        window. It resolves to a path, or to null if the dialog was cancelled.
+
+        Nothing is saved here. The chosen path is written into the field and the same `change` event
+        a human typing would have raised is fired, so the field's own hx-post does the saving. One
+        code path for both ways of filling it in.
+
+        Its own partial because two documents need it and only one of them has the layout: the
+        first-run form is a page of its own, for the same reason the profile question is. ]] %>
+<script>
+  async function pickFolder(btn) {
+    const input = btn.closest('.val').querySelector('input[name=value]');
+    // Absent when the page is opened in a plain browser rather than the app window. Typing still
+    // works, so there is nothing to report.
+    if (!window.wxlPickFolder) { input.focus(); return; }
+
+    let chosen = null;
+    try {
+      chosen = await window.wxlPickFolder(input.value || '');
+    } catch (e) {
+      console.error('folder picker failed', e);
+      return;
+    }
+    if (!chosen) return;
+
+    input.value = chosen;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+</script>

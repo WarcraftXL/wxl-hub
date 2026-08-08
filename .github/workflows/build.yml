@@ -1,4 +1,4 @@
-# Builds wxl-hub.exe and its payload, and publishes a release for every commit that lands on main.
+# Builds wxl-hub.exe and publishes a release for every commit that lands on main.
 #
 # The job is deliberately the same commands a developer runs: fetch the pinned dependencies,
 # compile-check the sources, build. Nothing here knows anything build.ps1 does not, so a green run
@@ -111,15 +111,10 @@ jobs:
       - name: Build
         run: .\build.ps1 -Compile -Release ${{ steps.v.outputs.version }}
 
-      # Both, always. The payload is useless without an executable old enough to have shipped once,
-      # and an executable published without its payload leaves everyone already running the hub with
-      # no way to move.
       - uses: actions/upload-artifact@v4
         with:
           name: wxl-hub-${{ steps.v.outputs.version }}
-          path: |
-            build/wxl-hub.exe
-            build/wxl-hub-payload.zip
+          path: build/wxl-hub.exe
           if-no-files-found: error
 
   # Every commit on main becomes a release, tag included. The tag is created by this job from the
@@ -157,10 +152,8 @@ jobs:
         with:
           tag_name: v${{ needs.build.outputs.version }}
           name: ${{ needs.build.outputs.name }}
-          # The payload asset name is a contract: core/boot.lua looks for wxl-hub-payload*.zip on the
-          # newest published release and offers nothing if it is not there.
-          files: |
-            wxl-hub.exe
-            wxl-hub-payload.zip
+          # The asset name is a contract: core/launcher.lua looks for wxl-hub.exe on the newest
+          # published release and has nothing to install if it is not there.
+          files: wxl-hub.exe
           generate_release_notes: true
           prerelease: false

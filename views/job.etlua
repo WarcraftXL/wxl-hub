@@ -26,6 +26,12 @@
     <% elseif job.kind == "update" then %>
       <span class="ok">&#10003; ready</span>
       <span class="phase">restart the hub to use it</span>
+    <% elseif job.kind == "patch" then %>
+      <% --[[ The verdict above this was written before any of it was true. Nothing here knows where
+              it is on the page, so it asks for it by id the moment it lands. ]] %>
+      <span class="ok">&#10003; done</span>
+      <span hx-get="/welcome/verdict" hx-target="#wverdict" hx-swap="outerHTML"
+            hx-trigger="load delay:200ms"></span>
     <% else %>
       <span class="ok">&#10003; done</span>
     <% end %>

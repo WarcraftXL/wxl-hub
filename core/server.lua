@@ -187,6 +187,9 @@ end
 -- handler: `before` renders the splash, `not_found` renders a page, and either raising would
 -- propagate out of the libuv read callback and take the worker thread with it. The window would
 -- then sit there, apparently fine, answering nothing.
+-- Requests that are asked for on a timer rather than by a person, and so say nothing about intent.
+local QUIET = { ["/boot/status"] = true, ["/theme.css"] = true }
+
 local function guard(what, path, fn, ...)
   local ok, err = xpcall(fn, debug.traceback, ...)
   if ok then return true, err end
@@ -209,6 +212,17 @@ function App:handle(raw, client)
   end
 
   if serve_static(self, req, res) then return end
+
+  -- One line per request, because the last thing that happened before something went wrong is
+  -- usually the only clue there is: a window that closes on its own leaves nothing else saying which
+  -- click preceded it.
+  --
+  -- The pollers are left out deliberately. /boot/status runs several times a second and the job
+  -- fragments do the same while a transfer is live, so logging them would bury the one line worth
+  -- reading under a thousand that say nothing.
+  if not QUIET[req.path] and not req.path:find("^/jobs/") then
+    print(("%s %s"):format(req.method, req.path))
+  end
 
   local function failed(err)
     if self.on_error then pcall(self.on_error, req, res, err) end
@@ -243,6 +257,42 @@ function App:handle(raw, client)
 
   local ok, err = guard("handler", req.path, handler, req, res)
   if not ok then failed(err) end
+end
+
+--- Block until something is listening on `port`, or the timeout runs out. Returns whether it is.
+--
+-- The window is pointed at a socket another thread is still on its way to binding. That thread has
+-- to start, load its modules, and for the application open a database and run its migrations, while
+-- the navigation is queued the moment the message loop starts. Whoever wins decides whether the
+-- first document is a page or a connection error, which is why the window sometimes came up showing
+-- nothing at all.
+--
+-- Runs the caller's own loop, which is idle at this point: the UI thread hands its loop to
+-- `webview_run` immediately afterwards and never uses libuv again.
+function M.wait(port, timeout_ms)
+  local done, ok = false, false
+  local retry = uv.new_timer()
+  local guard = uv.new_timer()
+
+  local function attempt()
+    local sock = uv.new_tcp()
+    local fine = pcall(function()
+      sock:connect("127.0.0.1", port, function(err)
+        pcall(function() sock:close() end)
+        if done then return end
+        if err then retry:start(20, 0, attempt) else ok, done = true, true end
+      end)
+    end)
+    if not fine then pcall(function() sock:close() end); retry:start(20, 0, attempt) end
+  end
+
+  guard:start(timeout_ms or 8000, 0, function() done = true end)
+  attempt()
+  while not done do uv.run("once") end
+
+  retry:stop(); retry:close()
+  guard:stop(); guard:close()
+  return ok
 end
 
 function App:listen(port)
