@@ -130,11 +130,12 @@ function M.serve(port, token, opts)
     if UNGATED[req.path] then return false end
 
     if not boot.ready() then
+      local step, done, total = boot.phase()
       res:html(view.render("splash", {
         stylesheet = style.href,
         csp        = page.CSP_PLAIN,
         line       = flavour.at(boot.elapsed(), seed),
-        step       = boot.phase(),
+        step       = step, done = done, total = total,
       }))
       return true
     end
@@ -165,11 +166,12 @@ function M.serve(port, token, opts)
 
   app.router:get("/boot/status", function(req, res)
     if boot.ready() then return res:hx_redirect("/") end
-    local idx  = flavour.index_at(boot.elapsed(), seed)
-    local step = boot.phase()
-    if idx == shown.idx and step == shown.step then return res:nothing() end
-    shown.idx, shown.step = idx, step
-    res:html(view.render("flavour", { line = flavour.lines[idx], step = step }))
+    local idx = flavour.index_at(boot.elapsed(), seed)
+    local step, done, total = boot.phase()
+    if idx == shown.idx and step == shown.step and done == shown.done then return res:nothing() end
+    shown.idx, shown.step, shown.done = idx, step, done
+    res:html(view.render("flavour",
+                         { line = flavour.lines[idx], step = step, done = done, total = total }))
   end)
 
   -- Registered here rather than in a module because more than one of them starts jobs, and the
@@ -295,8 +297,11 @@ function M.run()
   }
   win:icon("assets/logo.ico")
 
-  win:html('<!doctype html><meta name="color-scheme" content="dark">'
-        .. '<body style="margin:0;background:#101216"></body>')
+  -- Off screen until a document has been parsed, and dark underneath for every moment after that
+  -- where the frame is visible and the view has not caught up.
+  win:hide()
+  win:background(0x10, 0x12, 0x16)
+  print("window created, hidden until the first page reports in")
 
   -- The one thing the UI thread does that is not "show a page". A folder dialog is modal and has to
   -- be owned by the window, so it can only run here; the worker thread has no window to parent to
@@ -313,8 +318,38 @@ function M.run()
     return chosen and json.encode(chosen) or "null"
   end)
 
+  -- What puts the window on screen.
+  --
+  -- The page announces itself rather than the launcher guessing: nothing on this side knows when a
+  -- document has been parsed, and a delay long enough to be safe is a delay everyone waits through
+  -- on a fast machine. Injected rather than written into the templates, because `init` runs on every
+  -- navigation and the splash, the profile question and the app are three different documents.
+  --
+  -- It fires on the browser's own error page too, so a hub whose server never came up still shows a
+  -- window saying so instead of nothing at all.
+  win:bind("wxlReady", function()
+    win:show()
+    print("window shown")
+    return "null"
+  end)
+  win:init("addEventListener('DOMContentLoaded',function(){window.wxlReady&&wxlReady()})")
+
   win:navigate(("http://127.0.0.1:%d/?token=%s"):format(port, token))
-  win:run()
+  print(("navigating to 127.0.0.1:%d"):format(port))
+
+  -- The message loop, and the three lines that say how it ended.
+  --
+  -- Returning from here is the process's only normal exit, so without a word the log of a window
+  -- that vanished and the log of a window that was closed on purpose are the same log: everything
+  -- up to "listening", then nothing. The distinction is the whole question when someone reports the
+  -- window disappearing, and it costs one line to record.
+  local ran, why = xpcall(function() return win:run() end, debug.traceback)
+  if ran then
+    print("message loop ended, closing")
+  else
+    print("MESSAGE LOOP FAILED\n" .. tostring(why))
+  end
+
   win:destroy()
 
   -- The process ends outright, without unwinding anything.

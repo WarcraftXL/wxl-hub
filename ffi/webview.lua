@@ -60,6 +60,12 @@ unsigned long GetCurrentDirectoryA(unsigned long nBufferLength, char *lpBuffer);
 void *LoadImageA(void *hInst, const char *name, unsigned int type,
                  int cx, int cy, unsigned int fuLoad);
 intptr_t SendMessageA(void *hWnd, unsigned int Msg, uintptr_t wParam, intptr_t lParam);
+int ShowWindow(void *hWnd, int nCmdShow);
+uintptr_t SetClassLongPtrA(void *hWnd, int nIndex, intptr_t dwNewLong);
+]]
+
+ffi.cdef [[
+void *CreateSolidBrush(unsigned long color);
 ]]
 
 local M = {}
@@ -67,6 +73,7 @@ local M = {}
 local C          -- the loaded library, set by M.setup
 local kernel32 = ffi.load("kernel32")
 local user32   = ffi.load("user32")
+local gdi32    = ffi.load("gdi32")
 
 local ERRORS = {
   [-5] = "missing dependency (WebView2 runtime not installed?)",
@@ -218,6 +225,35 @@ end
 --- Native HWND, for anything that needs the Win32 handle.
 function Window:hwnd()
   return C.webview_get_native_handle(self._h, C.WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW)
+end
+
+--- Take the window off screen, or put it back.
+--
+-- `webview_create` makes the window **and** shows it, while the first document is a round trip away
+-- on another thread. Nothing can paint that gap: an empty frame is empty whatever colour it is, so
+-- the only way not to show it is not to show the window.
+function Window:hide() return self:_show(0) end   -- SW_HIDE
+function Window:show() return self:_show(5) end   -- SW_SHOW
+
+function Window:_show(cmd)
+  local hwnd = self:hwnd()
+  if hwnd ~= nil then user32.ShowWindow(hwnd, cmd) end
+  return self
+end
+
+--- Paint the frame's own background, behind whatever the web view has not drawn.
+--
+-- The belt to the hiding above: dragging a resize faster than the view repaints exposes the window
+-- class brush, and the stock one is white. COLORREF is 0x00BBGGRR, so the channels go in backwards.
+function Window:background(r, g, b)
+  local hwnd = self:hwnd()
+  if hwnd == nil then return self end
+  local GCLP_HBRBACKGROUND = -10
+  local brush = gdi32.CreateSolidBrush(b * 65536 + g * 256 + r)
+  if brush ~= nil then
+    user32.SetClassLongPtrA(hwnd, GCLP_HBRBACKGROUND, ffi.cast("intptr_t", brush))
+  end
+  return self
 end
 
 --- Set the window and taskbar icon from a .ico file.

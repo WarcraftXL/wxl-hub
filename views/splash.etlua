@@ -11,7 +11,8 @@
   <div class="spinner"></div>
   <div class="name">Warcraft<em>XL</em></div>
 
-  <div id="flavour"><%- render("flavour", { line = line, step = step }) %></div>
+  <div id="flavour"><%- render("flavour",
+       { line = line, step = step, done = done, total = total }) %></div>
 </div>
 
 <!-- Polls until boot lands. While loading the endpoint returns a fresh flavour line; once ready it

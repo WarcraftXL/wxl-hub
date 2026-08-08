@@ -507,7 +507,15 @@ footer .note { margin-left: auto }
 /* Fixed height and no transform: the block must not move when its text changes, or every swap reads
    as a jump. The fade is opacity only, and the server answers 204 when nothing changed so it does
    not replay on every poll. */
-.splash #flavour { width: 34rem; text-align: center; height: 6.4rem }
+.splash #flavour { width: 34rem; text-align: center; height: 8.2rem }
+
+/* The boot's own progress. Same shape and the same sweep as a download, because it is the same
+   promise to the reader: a filled bar counted something, a moving one did not. */
+.splash .bar { position: relative; overflow: hidden; width: 100%; height: 4px; margin-top: 1.1rem;
+  border-radius: 999px; background: var(--line) }
+.splash .bar i { display: block; height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold-2), var(--gold)); transition: width .3s linear }
+.splash .bar.idle i { width: 34% !important; animation: sweep 1.2s ease-in-out infinite }
 .splash .say { margin: .2rem 0 .3rem; font-size: 1.05rem; line-height: 1.5; color: var(--text);
   animation: fade .45s ease-out }
 .splash .who { margin: 0; font-size: .84rem; color: var(--gold); opacity: .8 }

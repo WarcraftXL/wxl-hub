@@ -1,3 +1,7 @@
 <p class="say">“<%= line[1] %>”</p>
 <p class="who"><%= line[2] %></p>
 <p class="step"><%= step %></p>
+<% local known = total and total > 0 %>
+<div class="bar<%= known and "" or " idle" %>">
+  <i style="width:<%= known and math.floor(done / total * 100) or 100 %>%"></i>
+</div>

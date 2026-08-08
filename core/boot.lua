@@ -76,9 +76,11 @@ local function job(topic, core_repo, hub_repo, progress_path)
   -- Two audiences. `steps` is the log, handed back at the end and printed for whoever is reading
   -- the console. The file is for the splash, which needs to know what is happening *now* and cannot
   -- wait for the work to finish to be told.
-  local function say(text)
+  -- Three lines: what is happening, and how far through it is when that is actually known. Zero for
+  -- the total means unknown, which the splash draws as a sweep rather than as a number it invented.
+  local function say(text, done, total)
     local fd = io.open(progress_path, "wb")
-    if fd then fd:write(text); fd:close() end
+    if fd then fd:write(("%s\n%d\n%d\n"):format(text, done or 0, total or 0)); fd:close() end
   end
 
   local function note(s) out.steps[#out.steps + 1] = s end
@@ -94,7 +96,9 @@ local function job(topic, core_repo, hub_repo, progress_path)
     if out.search then
       local items, found = json.decode(out.search).items or {}, 0
       for i, r in ipairs(items) do
-        say(("Reading manifests, %d of %d"):format(i, #items))
+        -- The only step whose length is known, and the one that takes the time: one request per
+        -- tagged repository. Everything else is a single fetch that is either quick or hung.
+        say(("Reading manifests, %d of %d"):format(i, #items), i, #items)
         -- Not every repository is on `main`: the default branch has to come from the search result
         -- or a third of the catalogue answers 404.
         local ref = r.default_branch or "main"
@@ -247,14 +251,21 @@ end
 -- Read from a file rather than returned by the worker, because the worker returns once and the
 -- splash needs an answer every time it asks. The last completed step is the fallback for the
 -- moments before the fetch starts.
+-- Returns the line, and how far through it is when the worker knew. The worker rewrites this file
+-- whole and nothing locks it, so a read can land mid-write: a torn read fails the match and gives
+-- back its first line with no progress, which is a stale caption rather than a mangled one.
 function M.phase()
   local fd = io.open(PROGRESS, "rb")
   if fd then
     local text = fd:read("*a")
     fd:close()
-    if text and text ~= "" then return text end
+    if text and text ~= "" then
+      local line, done, total = text:match("^([^\n]*)\n(%d+)\n(%d+)")
+      if line then return line, tonumber(done), tonumber(total) end
+      return (text:match("^([^\n]*)")), 0, 0
+    end
   end
-  return M.steps[#M.steps] or "Starting up"
+  return M.steps[#M.steps] or "Starting up", 0, 0
 end
 
 --- Is the cached copy past its life? True also when there is none.
