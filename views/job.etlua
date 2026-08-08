@@ -1,0 +1,34 @@
+<% --[[ Polls itself: every response is a whole new element carrying the next poll, so a job that has
+        finished simply returns markup without one and the polling stops on its own. There is no
+        timer to cancel and no state on the page to get out of step. ]] %>
+<div class="job <%= job.state %>"<% if job.state == "running" then %>
+     hx-get="/jobs/<%= job.id %>" hx-trigger="load delay:400ms" hx-swap="outerHTML"<% end %>>
+
+  <% if job.state == "running" then %>
+    <% --[[ Without a Content-Length there is no honest percentage, so the bar sweeps instead of
+            pretending to know. ]] %>
+    <div class="bar<%= job.percent and "" or " idle" %>">
+      <i style="width:<%= job.percent or 100 %>%"></i>
+    </div>
+    <span class="phase">
+      <%= job.phase %><% if job.bytes then %> <b><%= job.bytes %></b><% end %>
+    </span>
+
+  <% elseif job.state == "done" then %>
+    <% if job.kind == "install" then %>
+      <% --[[ The button that started this sits outside the fragment being swapped, so it would go on
+              saying Install over a finished install. Swapped out of band instead, which costs one
+              element and no page reload. Absent from the DOM on other pages, and htmx is content to
+              find no target. ]] %>
+      <div class="install is-on" id="installbtn" hx-swap-oob="true">Installed</div>
+      <span class="ok">&#10003; installed</span>
+      <a class="browse" href="/library">Library</a>
+    <% else %>
+      <span class="ok">&#10003; done</span>
+    <% end %>
+
+  <% else %>
+    <span class="bad">&#10007;</span>
+    <span class="phase"><%= job.error or "it did not work" %></span>
+  <% end %>
+</div>

@@ -1,0 +1,18 @@
+<% --[[ The compact band every working page opens with. Deliberately not a hero: Home earns a full one
+        because it is a landing page, but Library, Tools and Downloads are places you go to do
+        something, and an image tall enough to be worth having pushes the list below the fold on
+        every single visit.
+
+        `image` is optional and comes from page.config.images, either as a plain URL or as
+        { src, flip }. Without one the band is a gradient and still reads as a header; with one it is
+        covered, centred and darkened, so nothing depends on the picture having a particular size.
+        `flip` mirrors it, for artwork whose subject sits on the side the title needs. ]] %>
+<% local img = image %>
+<div class="phead<%= img and " hasimg" or "" %><%= img and img.flip and " flip" or "" %>"<%
+     if img then %> style="--phead-img:url('<%= img.src %>')"<% end %>>
+  <div class="pt">
+    <h1><%= title %></h1>
+    <% if lead then %><p><%= lead %></p><% end %>
+  </div>
+  <% if aside then %><div class="pa"><%- aside %></div><% end %>
+</div>

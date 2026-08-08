@@ -1,0 +1,17 @@
+<% --[[ The rail and the page it selects swap together. Replacing only the body would leave the
+        highlight on whichever section was open when the page first loaded. ]] %>
+<div class="prefs" id="prefs">
+  <aside class="prefnav">
+    <% local group %>
+    <% for _, x in ipairs(sections) do %>
+      <% if x.group ~= group then group = x.group %>
+        <h4><%= x.group %></h4>
+      <% end %>
+      <a class="<%= x.id == active and 'on' or '' %>" href="/settings/<%= x.id %>"
+         hx-get="/settings/<%= x.id %>" hx-target="#prefs" hx-swap="outerHTML"
+         hx-push-url="true"><%= x.label %></a>
+    <% end %>
+  </aside>
+
+  <div id="prefbody" class="settings"><%- body %></div>
+</div>

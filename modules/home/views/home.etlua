@@ -1,0 +1,80 @@
+<div class="page">
+
+  <section class="first">
+    <div class="hero">
+      <% if featured.image then %><img class="bg" src="<%= featured.image %>" alt=""><% end %>
+      <div class="veil"></div>
+      <div class="inner">
+        <span class="kind"><%= featured.kind %><% if featured.tag then %> · <%= featured.tag %><% end %></span>
+        <h1><%= featured.title %></h1>
+        <p><%= featured.body %></p>
+        <div class="meta">
+          <% if featured.cta then %>
+            <a class="btn primary" href="<%= featured.cta.href %>" target="_blank" rel="noopener noreferrer"><%= featured.cta.label %></a>
+          <% end %>
+          <span class="when"><%= featured.date %></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec">
+      <h2>Announcements</h2>
+      <span class="spacer"></span>
+      <span class="aside"><a href="/news">All announcements →</a></span>
+    </div>
+    <div class="announce">
+      <% for _, n in ipairs(news) do %>
+        <div class="item panel">
+          <span class="kind"><%= n.kind %></span>
+          <h3><%= n.title %></h3>
+          <p><%= n.body %></p>
+          <span class="when"><%= n.date %></span>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <!-- Whatever the installed modules contributed to "home.section". Each brings its own section
+       element; this page never learns which modules they came from. -->
+  <%- sections %>
+
+  <% if #history > 0 then %>
+  <section>
+    <div class="sec">
+      <h2>Recently viewed</h2>
+    </div>
+    <div class="hist">
+      <% for _, h in ipairs(history) do %>
+        <a href="<%= h.href %>">
+          <% if h.kind == "tool" then %>
+            <span class="ico"><%= h.icon %></span>
+          <% else %>
+            <span class="mark" style="<%= markstyle(h.id) %>"><%= initial(h.id) %></span>
+          <% end %>
+          <span class="t"><b><%= h.title %></b><span><%= h.subtitle %></span></span>
+          <span class="when"><%= h.when %></span>
+        </a>
+      <% end %>
+    </div>
+  </section>
+  <% end %>
+
+  <section class="divide">
+    <div class="support">
+      <% if support.image then %><img class="bg" src="<%= support.image %>" alt=""><% end %>
+      <div class="veil"></div>
+      <div class="inner">
+        <span class="kind">Call to arms</span>
+        <h3><%= support.headline %></h3>
+        <p><%= support.body %></p>
+        <div class="acts">
+          <a class="btn primary" href="<%= support.sponsor %>" target="_blank" rel="noopener noreferrer">Sponsor the project</a>
+          <a class="btn" href="<%= support.repo %>" target="_blank" rel="noopener noreferrer">Contribute code</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>

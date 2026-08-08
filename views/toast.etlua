@@ -1,0 +1,23 @@
+<% --[[ Appended out of band, so any response can raise one without knowing where on the page it will
+        land, and without the page making room for a banner it usually does not need.
+
+        The wrapper is load-bearing. For any swap style other than outerHTML, htmx inserts the
+        *contents* of the element carrying hx-swap-oob rather than the element itself, so putting the
+        attribute on the toast would append its innards and drop the toast's own class and box.
+
+        It removes itself in CSS: the animation ends collapsed, transparent and click-through, so
+        there is no timer to run and no request to spend on tidying up. The container is part of the
+        layout, so navigating away clears whatever is left. ]] %>
+<div hx-swap-oob="beforeend:#toasts">
+  <div class="toast <%= level %>" role="status">
+    <span class="ico">
+      <% if level == "good" then %>&#10003;
+      <% elseif level == "bad" then %>&#10007;
+      <% else %>&bull;<% end %>
+    </span>
+    <span class="t">
+      <b><%= title %></b>
+      <% if text then %><span><%= text %></span><% end %>
+    </span>
+  </div>
+</div>

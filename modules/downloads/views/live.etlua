@@ -1,0 +1,140 @@
+<% --[[ Polls only while something is running. An idle queue changes when you click, and a request a
+        second to be told nothing happened is a request nobody needed. ]] %>
+<div id="dlive"<% if head then %>
+     hx-get="/downloads/live" hx-trigger="load delay:600ms" hx-swap="outerHTML"<% end %>>
+
+  <div class="dlnow panel <%= head and "busy" or "idle" %>">
+    <% if head then %>
+
+      <div class="dlrow">
+        <span class="mark" style="<%= markstyle(head.ref or "x") %>"><%= initial(head.ref or "x") %></span>
+        <span class="t">
+          <b><%= head.label or head.ref %></b>
+          <span>
+            <%= head.phase %>
+            <% if head.total_h then %>
+              &middot; <%= head.done_h %> of <%= head.total_h %>
+            <% else %>
+              &middot; <%= head.done_h %>, size unknown
+            <% end %>
+          </span>
+        </span>
+        <span class="figs">
+          <% --[[ A literal character, not an entity: <%= escapes, so "&hellip;" would arrive on the
+                  page as "&amp;hellip;" and be read out loud. ]] %>
+          <b><%= now_rate or "…" %></b>
+          <span><% if head.eta then %><%= head.eta %> left
+                <% elseif now_rate then %>estimating
+                <% else %>starting<% end %></span>
+        </span>
+      </div>
+
+      <% --[[ A bar rather than a chart. The numbers under it say everything the curve did, and a
+              bar is legible at a glance from across the room, which a 40 second sparkline never
+              was. ]] %>
+      <div class="dlbar<%= head.percent and "" or " idle" %>">
+        <i style="width:<%= head.percent or 100 %>%"></i>
+      </div>
+
+      <div class="dlstats">
+        <% if head.percent then %>
+          <span><b><%= head.percent %>%</b> complete</span>
+        <% end %>
+        <span>
+          <b><%= head.done_h %></b><% if head.total_h then %> of <%= head.total_h %><% end %>
+        </span>
+        <% if head.eta then %><span><b><%= head.eta %></b> left</span><% end %>
+        <% if peak then %><span>peak <b><%= peak %></b></span><% end %>
+      </div>
+
+      <% if queue then %>
+        <div class="dlqueue">
+          <% for i = 2, #queue do %>
+            <span class="qitem"><%= queue[i].label or queue[i].ref %></span>
+          <% end %>
+        </div>
+      <% end %>
+
+    <% else %>
+      <div class="dlempty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M4 21h16"/>
+        </svg>
+        <b>Nothing is downloading</b>
+        <span>Anything you accept below lands here, with its speed as it happens.</span>
+      </div>
+    <% end %>
+  </div>
+
+  <section class="divide">
+    <div class="sec">
+      <h2>Waiting for you</h2>
+      <span class="aside"><%= #pending %> pending</span>
+      <span class="spacer"></span>
+      <% if #pending > 0 and online then %>
+        <a class="browse" hx-post="/downloads/accept-all" hx-target="#dlive"
+           hx-swap="outerHTML">Update all</a>
+      <% end %>
+    </div>
+
+    <% if #pending == 0 then %>
+      <p class="noresult">Everything installed is at the version the catalogue offers.</p>
+    <% else %>
+      <div class="hist">
+        <% for _, p in ipairs(pending) do %>
+          <div class="row">
+            <span class="mark" style="<%= markstyle(p.id) %>"><%= initial(p.id) %></span>
+            <span class="t">
+              <b><%= p.title %></b>
+              <span>v<%= p.from %> &rarr; v<%= p.to %><% if p.owner then %>
+                &middot; <%= p.owner %><% end %></span>
+            </span>
+            <span class="acts">
+              <% if not p.usable then %>
+                <span class="warn"><%= p.why_not %></span>
+              <% elseif not online then %>
+                <span class="warn">offline</span>
+              <% else %>
+                <a class="browse" hx-post="/downloads/accept/<%= p.id %>"
+                   hx-target="#dlive" hx-swap="outerHTML">Update</a>
+              <% end %>
+              <a class="browse ghost" href="/store/<%= p.id %>">Details</a>
+            </span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </section>
+
+  <% if #recent > 0 then %>
+    <section class="divide">
+      <div class="sec"><h2>Recent</h2></div>
+      <div class="hist">
+        <% for _, j in ipairs(recent) do %>
+          <% local v = job_view(j) %>
+          <div class="row">
+            <span class="mark" style="<%= markstyle(v.ref or "x") %>"><%= initial(v.ref or "x") %></span>
+            <span class="t">
+              <b><%= v.label or v.ref or v.kind %></b>
+              <span>
+                <% if v.state == "done" then %>
+                  finished<% if v.took then %> in <%= v.took %><% end %>
+                <% elseif v.state == "failed" then %>
+                  <%= v.error %>
+                <% else %>
+                  <%= v.phase %>
+                <% end %>
+              </span>
+            </span>
+            <span class="acts">
+              <span class="dot <%= v.state %>"></span>
+              <span class="when"><%= ago(v.at) %></span>
+            </span>
+          </div>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+</div>

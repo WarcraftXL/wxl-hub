@@ -1,0 +1,38 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Choose a profile</title>
+<meta http-equiv="Content-Security-Policy" content="<%= csp %>">
+<link rel="icon" href="/static/logo.png">
+<script src="/vendor/htmx.min.js"></script>
+<link rel="stylesheet" href="<%= stylesheet %>">
+
+<% --[[ Its own page rather than a dialog over the hub. Nothing behind it has been decided yet: the
+        active profile is what every scoped setting reads from, so the bar, the library and the
+        client path would all be answering for a profile the user has not picked. ]] %>
+<div class="choose">
+  <div class="cbox panel">
+    <img src="/static/logo.png" alt="">
+    <h1>Which profile?</h1>
+    <p>A profile holds the client you launch and the paths that go with it.</p>
+
+    <form id="chooseform" onsubmit="return false">
+      <div class="clist">
+        <% for _, p in ipairs(profiles) do %>
+          <button class="citem<%= p.id == active and " on" or "" %>"
+                  hx-post="/profiles/use/<%= p.id %>" hx-include="#chooseform" hx-swap="none">
+            <span class="dot"></span>
+            <span class="t"><%= p.name %></span>
+            <% if p.id == active then %><span class="last">last used</span><% end %>
+          </button>
+        <% end %>
+      </div>
+
+      <label class="cremember">
+        <input type="checkbox" name="remember" value="1">
+        <span>Remember my choice and stop asking</span>
+      </label>
+    </form>
+
+    <p class="cfoot">You can change this later in Settings, under Profiles.</p>
+  </div>
+</div>

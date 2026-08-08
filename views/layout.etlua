@@ -1,0 +1,111 @@
+<!doctype html>
+<meta charset="utf-8">
+<title><%= title %></title>
+<meta http-equiv="Content-Security-Policy" content="<%= csp %>">
+<link rel="icon" href="/static/logo.png">
+<script src="/vendor/htmx.min.js"></script>
+<link rel="stylesheet" href="<%= stylesheet %>">
+
+<header class="top">
+  <a class="brand" href="/">
+    <img src="/static/logo.png" alt="">
+    <span>Warcraft<em>XL</em></span>
+  </a>
+  <nav class="nav">
+    <% for _, item in ipairs(nav) do %>
+      <a class="<%= item.on and 'on' or '' %>" href="<%= item.href %>"><%= item.label %></a>
+    <% end %>
+  </nav>
+  <span class="spacer"></span>
+
+  <% --[[ The bell polls for its own count; the downloads pip is rendered with the page and refreshed
+          by the same poll, so one request keeps both honest. ]] %>
+  <%- render("core:trayicons", { unread = unread, queued = queued, active = active }) %>
+
+  <a class="profile <%= active == 'settings' and 'on' or '' %>" href="/settings">
+    <span class="dot"></span><span id="profilename"><%= profile %></span>
+  </a>
+  <% --[[ Swaps nothing: the only thing that comes back is a toast, which lands out of band. ]] %>
+  <button class="play" hx-post="/launch" hx-swap="none">Play</button>
+</header>
+
+<% if stale then %>
+<div class="stalebar">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" aria-hidden="true">
+    <path d="M12 8v5M12 17h.01M10.3 3.9 1.8 18.2A2 2 0 0 0 3.5 21h17a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0z"/>
+  </svg>
+  <span><%= stale.text %></span>
+</div>
+<% end %>
+
+<% --[[ Toasts are appended here out of band by whatever response raised them. Part of the layout, so
+        navigating away is also what clears the ones that have already faded. ]] %>
+<div id="toasts" aria-live="polite"></div>
+
+<%- body %>
+
+<script>
+  // The whole of the app's JavaScript. Neither function holds state or talks to the server on its
+  // own: anything that changes something goes through htmx, the same way a form post would.
+
+  // Purely visual: nudging a horizontal rail by a screenful.
+  function railScroll(btn, dir) {
+    const track = btn.closest('.railx').querySelector('.track');
+    track.scrollBy({ left: dir * track.clientWidth * 0.8, behavior: 'smooth' });
+  }
+
+  // A <details> closes on its own summary but not on a click elsewhere, which leaves the panel
+  // hanging open behind whatever you meant to do next. One listener, and it survives htmx swapping
+  // the tray because it looks the element up at click time rather than holding a reference.
+  document.addEventListener('click', function (e) {
+    document.querySelectorAll('.tray details[open]').forEach(function (d) {
+      if (!d.contains(e.target)) d.removeAttribute('open');
+    });
+  });
+
+  // The one thing HTML cannot do: ask Windows for a folder. `window.wxlPickFolder` is bound on the
+  // Lua side (core/app.lua) and runs the native dialog on the UI thread, which is the only thread
+  // allowed to own a modal window. It resolves to a path, or to null if the user cancelled.
+  //
+  // Nothing is saved here. The chosen path is written into the field and the same `change` event a
+  // human typing would have raised is fired, so the field's own hx-post does the saving. That keeps
+  // one code path for both ways of filling it in.
+  async function pickFolder(btn) {
+    const input = btn.closest('.val').querySelector('input[name=value]');
+    // Absent when the page is opened in a plain browser rather than the app window. Typing still
+    // works, so there is nothing to report.
+    if (!window.wxlPickFolder) { input.focus(); return; }
+
+    let chosen = null;
+    try {
+      chosen = await window.wxlPickFolder(input.value || '');
+    } catch (e) {
+      console.error('folder picker failed', e);
+      return;
+    }
+    if (!chosen) return;
+
+    input.value = chosen;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+</script>
+
+<% if discord then %>
+<a class="fab" href="<%= discord %>" target="_blank" rel="noopener noreferrer">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M21 11.5a8.5 8.5 0 0 1-12.2 7.7L3 21l1.9-5.6A8.5 8.5 0 1 1 21 11.5z"/>
+  </svg>
+  Join the Discord
+</a>
+<% end %>
+
+<footer>
+  <span class="figs">
+    <span><b><%= stats.modules %></b> modules</span>
+    <span><b><%= stats.authors %></b> authors</span>
+    <span>catalogue <b><%= cache_age %></b></span>
+  </span>
+  <span class="note">Read from GitHub. A repository is listed once it publishes a wxl.json.</span>
+</footer>

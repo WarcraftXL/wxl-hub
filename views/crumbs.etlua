@@ -1,0 +1,10 @@
+<nav class="crumbs">
+  <% for i, c in ipairs(trail) do %>
+    <% if i > 1 then %><span class="sep">/</span><% end %>
+    <% if c[2] then %>
+      <a href="<%= c[2] %>"><%= c[1] %></a>
+    <% else %>
+      <span class="cur"><%= c[1] %></span>
+    <% end %>
+  <% end %>
+</nav>

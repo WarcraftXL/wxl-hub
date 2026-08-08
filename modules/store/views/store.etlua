@@ -1,0 +1,28 @@
+<div class="page">
+  <section class="first">
+    <%- render("crumbs", { trail = trail }) %>
+
+    <% local shot = pageimage("store") %>
+    <div class="storehead<%= shot and " hasimg" or "" %><%= shot and shot.flip and " flip" or "" %>"<%
+         if shot then %> style="--phead-img:url('<%= shot.src %>')"<% end %>>
+      <h1>Extensions for a client that was never meant to have any</h1>
+      <p>
+        <%= total %> of the <%= tagged %> repositories tagged <code>wxl-modules</code> on GitHub
+        publish a <code>wxl.json</code>, from <%= authors %> author<%= authors == 1 and "" or "s" %>.
+        Nothing to submit and no account to create: tag a repository, commit a manifest at its root,
+        and it appears here.
+      </p>
+      <form class="big" onsubmit="return false">
+        <input type="search" name="q"
+               placeholder="Search <%= total %> module<%= total == 1 and "" or "s" %>…"
+               value="<%= f.q or '' %>"
+               hx-get="/store" hx-target="#storebody" hx-swap="outerHTML"
+               hx-trigger="input changed delay:300ms, search"
+               hx-include="closest .storehead, .filters" hx-push-url="true">
+      </form>
+    </div>
+
+    <%- render("storebody", { f = f, facets = facets, results = results, sorts = sorts,
+                              href = href, default_sort = default_sort }) %>
+  </section>
+</div>

@@ -1,0 +1,3 @@
+<p class="say">“<%= line[1] %>”</p>
+<p class="who"><%= line[2] %></p>
+<p class="step"><%= step %></p>

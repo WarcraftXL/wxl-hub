@@ -1,0 +1,34 @@
+<div class="set panel">
+  <h3>Developer</h3>
+  <p class="hint">Turns on the tool pages, the log viewer and the packaging flow. This one is about
+    you rather than about a client, so it holds across every profile.</p>
+
+  <div class="field">
+    <label>Developer mode</label>
+    <div class="val">
+      <%- render("core:switch", { key = "developer", on = developer, back = "/settings/developer" }) %>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>wxl-core checkout <span class="pill">this profile</span></label>
+    <div class="val">
+      <input type="text" name="value" value="<%= s.core_path %>" placeholder="not set"
+             hx-post="/settings/value/core_path" hx-trigger="change" hx-target="next .ok"
+             hx-swap="outerHTML">
+      <a class="browse" onclick="pickFolder(this)">Browse</a>
+      <span class="ok"></span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Python interpreter</label>
+    <div class="val">
+      <% if python then %>
+        <span class="note"><%= python %></span><span class="ok">&#10003; found</span>
+      <% else %>
+        <span class="warn">not found, the tool pages stay disabled</span>
+      <% end %>
+    </div>
+  </div>
+</div>

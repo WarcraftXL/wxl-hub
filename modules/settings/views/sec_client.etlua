@@ -1,0 +1,49 @@
+<div class="set panel">
+  <h3>Client</h3>
+  <p class="hint">Where the 3.3.5a client lives. Extensions are installed into its
+    <code>Extensions</code> folder, one folder per extension, which is where the core looks for
+    them.</p>
+
+  <div class="field">
+    <label>Client folder <span class="pill">this profile</span></label>
+    <div class="val">
+      <input type="text" name="value" value="<%= client.path %>"
+             placeholder="the folder holding Wow.exe"
+             hx-post="/settings/value/client_path?section=client" hx-trigger="change"
+             hx-target="#prefbody" hx-swap="innerHTML">
+      <a class="browse" onclick="pickFolder(this)">Browse</a>
+    </div>
+  </div>
+
+  <% for _, c in ipairs(client.checks) do %>
+    <div class="field">
+      <label><%= c.label %></label>
+      <div class="val">
+        <% if c.state == "ok" then %><span class="ok">&#10003;</span>
+        <% elseif c.state == "warn" then %><span class="warn">!</span>
+        <% else %><span class="bad">&#10007;</span><% end %>
+        <span class="note"><%= c.detail %></span>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <label>Clear the client cache on launch <span class="pill">this profile</span></label>
+    <div class="val">
+      <%- render("core:switch", { key = "clear_cache", on = clear_cache }) %>
+      <span class="note">Deletes the client's own <code>Cache</code> folder before starting it.
+        The game rebuilds it, so the first load is slower.</span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Verdict</label>
+    <div class="val">
+      <% if client.ok then %>
+        <span class="ok">this is a client the hub can install into</span>
+      <% else %>
+        <span class="bad">not usable yet, installing stays disabled</span>
+      <% end %>
+    </div>
+  </div>
+</div>

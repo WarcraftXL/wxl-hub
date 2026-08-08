@@ -1,0 +1,83 @@
+<div class="page" id="librarybody">
+  <section class="first">
+    <%- render("core:crumbs", { trail = trail }) %>
+    <%- render("core:pagehead", {
+          title = "Library",
+          lead  = "What is installed into this profile's client. Enabled modules are the ones the "
+               .. "core loads at launch.",
+          image = pageimage("library"),
+          aside = #installed > 0
+                  and ('<span class="figbig"><b>' .. enabled .. '</b> of ' .. #installed
+                       .. ' enabled</span>') or nil,
+        }) %>
+
+    <% if #installed == 0 then %>
+      <div class="panel dlempty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H19v16H6.5A2.5 2.5 0 0 1 4 17.5z"/>
+          <path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H19"/>
+        </svg>
+        <b>Nothing installed yet</b>
+        <span>What you install lands here, and what is here is what the client loads at launch.</span>
+        <% if can_browse then %>
+          <a class="btn primary" href="/store" style="margin-top:1rem">Browse the store</a>
+        <% end %>
+      </div>
+    <% else %>
+      <% --[[ The name gets the full width of the card and the actions sit under a rule. Sharing one
+              line with them squeezed the one thing you are actually scanning for. ]] %>
+      <div class="libcards">
+        <% for _, m in ipairs(installed) do %>
+          <div class="libcard<%= m.enabled ~= 1 and " off" or "" %>">
+
+            <div class="lhead">
+              <span class="mark" style="<%= markstyle(m.id) %>"><%= initial(m.id) %></span>
+              <span class="t">
+                <b><%= m.id %></b>
+                <span><%= m.tagline or (m.listed and "no description" or "not in the catalogue") %></span>
+              </span>
+              <% --[[ The switch is the state, not a button describing it: a control reading
+                      "Disable" tells you what will happen, never what is true now. It sits apart
+                      from the actions for the same reason. ]] %>
+              <a class="switch <%= m.enabled == 1 and "on" or "" %>"
+                 title="<%= m.enabled == 1 and "Loaded at launch" or "Not loaded" %>"
+                 hx-post="/library/<%= m.id %>/toggle"
+                 hx-target="#librarybody" hx-swap="outerHTML"></a>
+            </div>
+
+            <div class="lmeta">
+              <% if m.update then %>
+                <span class="up">v<%= m.version %> &rarr; v<%= m.update.to %></span>
+              <% else %>
+                <span>v<%= m.version %></span>
+              <% end %>
+              <span>ABI <%= m.abi or "?" %></span>
+              <% if m.owner then %><span><%= m.owner %></span><% end %>
+              <% if not m.listed then %><span>unlisted</span><% end %>
+              <% if m.source then %><span class="src"><%= m.source %></span><% end %>
+            </div>
+
+            <div class="lacts">
+              <% if m.update and online then %>
+                <a class="browse gold" hx-post="/library/<%= m.id %>/update"
+                   hx-target="#librarybody" hx-swap="outerHTML">Update</a>
+              <% end %>
+              <% if m.listed then %>
+                <a class="browse" href="/store/<%= m.id %>">Details</a>
+              <% end %>
+              <a class="browse danger" hx-post="/library/<%= m.id %>/remove"
+                 hx-target="#librarybody" hx-swap="outerHTML">Remove</a>
+            </div>
+
+          </div>
+        <% end %>
+      </div>
+
+      <p class="libnote">
+        Disabled modules stay on disk and are simply not loaded. Removing one deletes the files the
+        hub wrote and leaves anything you edited in place.
+      </p>
+    <% end %>
+  </section>
+</div>

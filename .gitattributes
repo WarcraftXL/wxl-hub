@@ -1,0 +1,18 @@
+# Normalise to LF in the repository, and check out what each tool actually needs.
+#
+* text=auto eol=lf
+
+*.ps1  text eol=crlf
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+
+*.png  binary
+*.ico  binary
+*.dll  binary
+*.exe  binary
+*.lib  binary
+*.gz   binary
+
+# Vendored, so it should not colour the language breakdown or show up in reviews as our work.
+deps/htmx/**  linguist-vendored
+deps/lua/**   linguist-vendored

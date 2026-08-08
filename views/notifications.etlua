@@ -1,0 +1,35 @@
+<div class="tphead">
+  <b>Notifications</b>
+  <span class="spacer"></span>
+  <% if #items > 0 then %>
+    <a class="clear" hx-post="/notifications/clear" hx-target="closest .traypanel"
+       hx-swap="innerHTML">Clear all</a>
+  <% end %>
+</div>
+
+<% if #items == 0 then %>
+  <p class="tpempty">Nothing yet. Installs, updates and failures land here.</p>
+<% else %>
+  <% for _, n in ipairs(items) do %>
+    <div class="tpitem <%= n.level %>">
+      <span class="dot"></span>
+      <% --[[ The body is a link only when there is somewhere to go, so a notice with no destination
+              does not pretend to be clickable. The dismiss sits outside it either way, or clicking
+              it would navigate instead. ]] %>
+      <% if n.href then %>
+        <a class="t" href="<%= n.href %>">
+          <b><%= n.title %></b>
+          <% if n.body then %><span><%= n.body %></span><% end %>
+        </a>
+      <% else %>
+        <span class="t">
+          <b><%= n.title %></b>
+          <% if n.body then %><span><%= n.body %></span><% end %>
+        </span>
+      <% end %>
+      <span class="when"><%= ago(n.created_at) %></span>
+      <a class="x" title="Dismiss" hx-post="/notifications/<%= n.id %>/dismiss"
+         hx-target="closest .traypanel" hx-swap="innerHTML">&#10005;</a>
+    </div>
+  <% end %>
+<% end %>

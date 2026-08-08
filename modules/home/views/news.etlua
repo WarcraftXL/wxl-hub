@@ -1,0 +1,21 @@
+<div class="page">
+  <section class="first">
+    <%- render("core:crumbs", { trail = trail }) %>
+    <div class="sec">
+      <h2>Announcements</h2>
+      <span class="spacer"></span>
+      <span class="aside">published by wxl-core</span>
+    </div>
+
+    <div class="announce">
+      <% for _, n in ipairs(items) do %>
+        <div class="item panel">
+          <span class="kind"><%= n.kind %><% if n.tag then %> · <%= n.tag %><% end %></span>
+          <h3><%= n.title %></h3>
+          <p><%= n.body %></p>
+          <span class="when"><%= n.date %></span>
+        </div>
+      <% end %>
+    </div>
+  </section>
+</div>

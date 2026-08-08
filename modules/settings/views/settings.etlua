@@ -1,0 +1,11 @@
+<div class="page">
+  <section class="first">
+    <%- render("core:crumbs", { trail = trail }) %>
+    <div class="sec">
+      <h2>Settings</h2>
+      <span class="aside">stored in hub.db on this machine</span>
+    </div>
+
+    <%- render("prefs", { sections = sections, active = active, body = body }) %>
+  </section>
+</div>

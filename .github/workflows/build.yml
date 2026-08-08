@@ -1,0 +1,113 @@
+# Builds wxl-hub.exe, and publishes it when a version tag is pushed.
+#
+# The job is deliberately the same three commands a developer runs: fetch the pinned dependencies,
+# compile-check the sources, build the executable. Nothing here knows anything build.ps1 does not,
+# so a green run means the documented local build works, not that some parallel CI path does.
+
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # Stated rather than left to the default, because the two PowerShells disagree about native
+    # programs. Windows PowerShell 5.1 turns a line written to stderr into an error record and can
+    # end a script that succeeded; pwsh does not. The scripts are written to survive both, and this
+    # pins which one is being asked to run them.
+    shell: pwsh
+
+jobs:
+  build:
+    # webview is compiled from source and the output is a Windows PE, so there is no cross-building
+    # this on anything else.
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # deps\ holds four pinned binaries and none of them are committed. Caching them keeps the
+      # webview compile, which is the only slow step, off every run that did not change the pins.
+      - name: Cache vendored binaries
+        uses: actions/cache@v4
+        with:
+          path: deps/luvi/luvi-Windows-amd64-luajit-regular.exe
+          key: deps-${{ hashFiles('scripts/Get-Deps.ps1') }}
+        # Listed one path per entry below rather than as a glob, so a partially populated deps\ can
+        # never restore as a hit.
+
+      - name: Cache built webview
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps/webview/webview.dll
+            deps/webview/WebView2Loader.dll
+            deps/sqlite/sqlite3.dll
+          key: deps-native-${{ hashFiles('scripts/Get-Deps.ps1') }}
+
+      - name: Fetch dependencies
+        run: .\scripts\Get-Deps.ps1
+
+      - name: Compile check
+        run: |
+          .\deps\luvi\luvi-Windows-amd64-luajit-regular.exe scripts\check
+          if ($LASTEXITCODE -ne 0) { throw "sources do not compile" }
+
+      - name: Build
+        run: .\build.ps1 -Compile
+
+      - name: Name the artifact
+        id: name
+        run: |
+          $version = if ($env:GITHUB_REF -like 'refs/tags/v*') {
+            $env:GITHUB_REF -replace '^refs/tags/v', ''
+          } else {
+            'dev-' + $env:GITHUB_SHA.Substring(0, 7)
+          }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "version $version"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wxl-hub-${{ steps.name.outputs.version }}
+          path: build/wxl-hub.exe
+          if-no-files-found: error
+
+  # Only ever on a tag. A release is a deliberate act, not something a merge to main performs.
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    # A job's permissions replace the workflow's rather than adding to them, so `contents: write`
+    # alone would take away the read access the download step needs. Both are named here.
+    #
+    # This is the whole of the credential story: GITHUB_TOKEN is minted for each run and expires
+    # with it, so nothing has to be created, stored or rotated. What decides whether publishing
+    # works is this block, not which kind of token was used. Private repositories publish releases
+    # exactly like public ones; they are simply only visible to people with access.
+    permissions:
+      contents: write
+      actions: read
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wxl-hub-*
+          merge-multiple: true
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          files: wxl-hub.exe
+          generate_release_notes: true
+          # Drafted rather than published outright: the tag is the trigger, the last look is still a
+          # human's.
+          draft: true

@@ -1,0 +1,13 @@
+<div class="notfound">
+  <% if image then %><img class="bg" src="<%= image %>" alt=""><% end %>
+  <div class="veil"></div>
+  <div class="inner">
+    <span class="code"><%= code %></span>
+    <h1><%= title %></h1>
+    <p><%= text %></p>
+    <div class="acts">
+      <a class="btn primary" href="/">Back to Home</a>
+      <a class="btn" href="/store">Browse the store</a>
+    </div>
+  </div>
+</div>

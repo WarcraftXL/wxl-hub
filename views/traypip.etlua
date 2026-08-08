@@ -1,0 +1,8 @@
+<% --[[ The counter alone, in a slot that exists even at zero so there is always something for an
+        out-of-band swap to aim at.
+
+        Deliberately not part of the tray element: swapping the whole tray would replace the
+        <details> holding the panel, and replacing an open <details> closes it. Refreshing a count
+        must not be able to shut the thing the user just opened. ]] %>
+<span class="pipslot" id="<%= id %>"<% if oob then %> hx-swap-oob="true"<% end %>><%
+  if n > 0 then %><i class="pip"><%= n > 9 and "9+" or n %></i><% end %></span>

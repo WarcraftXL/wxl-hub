@@ -1,0 +1,101 @@
+<div class="store" id="storebody">
+
+  <aside class="filters">
+    <input type="hidden" name="q" value="<%= f.q or '' %>">
+    <input type="hidden" name="cat" value="<%= f.cat or '' %>">
+    <input type="hidden" name="author" value="<%= f.author or '' %>">
+    <input type="hidden" name="src" value="<%= f.src or '' %>">
+    <input type="hidden" name="sort" value="<%= f.sort or '' %>">
+
+    <div class="grp">
+      <h4>Source</h4>
+      <a class="<%= f.src == 'official' and 'on' or '' %>"
+         href="<%= href{ src = 'official' } %>"
+         hx-get="<%= href{ src = 'official' } %>" hx-target="#storebody" hx-swap="outerHTML"
+         hx-push-url="true">Official <i><%= facets.source.official %></i></a>
+      <a class="<%= f.src == 'community' and 'on' or '' %>"
+         href="<%= href{ src = 'community' } %>"
+         hx-get="<%= href{ src = 'community' } %>" hx-target="#storebody" hx-swap="outerHTML"
+         hx-push-url="true">Community <i><%= facets.source.community %></i></a>
+    </div>
+
+    <div class="grp">
+      <h4>Type</h4>
+      <% for _, c in ipairs(facets.categories) do %>
+        <a class="<%= f.cat == c.key and 'on' or '' %>"
+           href="<%= href{ cat = c.key } %>"
+           hx-get="<%= href{ cat = c.key } %>" hx-target="#storebody" hx-swap="outerHTML"
+           hx-push-url="true"><%= c.key %> <i><%= c.n %></i></a>
+      <% end %>
+    </div>
+
+    <div class="grp">
+      <h4>Author</h4>
+      <% for _, a in ipairs(facets.authors) do %>
+        <a class="<%= f.author == a.key and 'on' or '' %>"
+           href="<%= href{ author = a.key } %>"
+           hx-get="<%= href{ author = a.key } %>" hx-target="#storebody" hx-swap="outerHTML"
+           hx-push-url="true"><%= a.key %> <i><%= a.n %></i></a>
+      <% end %>
+    </div>
+
+    <% if f.cat or f.author or f.src or (f.q or "") ~= "" then %>
+      <a class="clear" href="/store"
+         hx-get="/store" hx-target="#storebody" hx-swap="outerHTML" hx-push-url="true">
+        Clear all filters
+      </a>
+    <% end %>
+  </aside>
+
+  <div>
+    <% if f.cat or f.author or f.src or (f.q or "") ~= "" then %>
+      <div class="active">
+        <% if (f.q or "") ~= "" then %>
+          <a href="<%= href{ q = '' } %>" hx-get="<%= href{ q = '' } %>"
+             hx-target="#storebody" hx-swap="outerHTML" hx-push-url="true">“<%= f.q %>” <i>×</i></a>
+        <% end %>
+        <% if f.src then %>
+          <a href="<%= href{ src = f.src } %>" hx-get="<%= href{ src = f.src } %>"
+             hx-target="#storebody" hx-swap="outerHTML" hx-push-url="true"><%= f.src %> <i>×</i></a>
+        <% end %>
+        <% if f.cat then %>
+          <a href="<%= href{ cat = f.cat } %>" hx-get="<%= href{ cat = f.cat } %>"
+             hx-target="#storebody" hx-swap="outerHTML" hx-push-url="true"><%= f.cat %> <i>×</i></a>
+        <% end %>
+        <% if f.author then %>
+          <a href="<%= href{ author = f.author } %>" hx-get="<%= href{ author = f.author } %>"
+             hx-target="#storebody" hx-swap="outerHTML" hx-push-url="true"><%= f.author %> <i>×</i></a>
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="resbar">
+      <span class="count"><%= #results %> <%= #results == 1 and "module" or "modules" %></span>
+      <span class="spacer"></span>
+      <div class="sorts">
+        <% for _, s in ipairs(sorts) do %>
+          <a class="<%= s.key == (f.sort or default_sort) and 'on' or '' %>"
+             href="<%= href{ sort = s.key, keep = true } %>"
+             hx-get="<%= href{ sort = s.key, keep = true } %>"
+             hx-target="#storebody" hx-swap="outerHTML" hx-push-url="true"><%= s.label %></a>
+        <% end %>
+      </div>
+    </div>
+
+    <% if #results == 0 and (f.cat or f.author or f.src or (f.q or "") ~= "") then %>
+      <p class="noresult">Nothing matches those filters.</p>
+    <% elseif #results == 0 then %>
+      <p class="noresult">
+        No tagged repository publishes a <code>wxl.json</code> yet.<br>
+        Commit one at the root of yours and it shows up here on the next launch.
+      </p>
+    <% else %>
+      <div class="results">
+        <% for _, mod in ipairs(results) do %>
+          <%- render("card", { mod = mod }) %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+</div>

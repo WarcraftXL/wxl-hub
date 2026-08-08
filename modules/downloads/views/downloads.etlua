@@ -1,0 +1,13 @@
+<div class="page">
+  <section class="first">
+    <%- render("core:crumbs", { trail = trail }) %>
+    <%- render("core:pagehead", {
+          title = "Downloads",
+          lead  = "What is running, and what is waiting on you. Updates install only once you say "
+               .. "so.",
+          image = pageimage("downloads"),
+        }) %>
+
+    <div id="dlive"><%- live %></div>
+  </section>
+</div>

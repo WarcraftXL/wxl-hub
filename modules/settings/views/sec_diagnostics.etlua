@@ -1,0 +1,40 @@
+<div class="set panel">
+  <h3>Modules</h3>
+  <p class="hint">What the hub loaded at startup.</p>
+  <% for _, m in ipairs(loaded) do %>
+    <div class="field">
+      <label><%= m.name or m.id %></label>
+      <div class="val">
+        <span class="note"><%= m.description or m.mount %></span>
+        <% if m.dev_only then %><span class="pill">developer</span><% end %>
+        <% if m.missing_tools and #m.missing_tools > 0 then %>
+          <span class="warn">missing <%= table.concat(m.missing_tools, ", ") %></span>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+  <% for _, f in ipairs(failed) do %>
+    <div class="field">
+      <label><%= f.id %></label>
+      <div class="val"><span class="warn">failed to load</span></div>
+    </div>
+  <% end %>
+</div>
+
+<div class="set panel">
+  <h3>Wiring</h3>
+  <p class="hint">What modules offer each other through the mediator. Nothing here is imported
+    directly, and a capability with no provider simply goes unanswered.</p>
+  <div class="field">
+    <label>Capabilities</label>
+    <div class="val"><span class="note"><%= table.concat(wiring.provides, ", ") %></span></div>
+  </div>
+  <% for _, p in ipairs(wiring.points) do %>
+    <div class="field">
+      <label><%= p.name %></label>
+      <div class="val">
+        <span class="note"><%= p.count %> contribution<%= p.count == 1 and "" or "s" %></span>
+      </div>
+    </div>
+  <% end %>
+</div>

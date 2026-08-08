@@ -1,0 +1,65 @@
+<% --[[ Rendered into whatever rail collected it. It knows the id of the slot it swaps into and
+        nothing else about the page around it. ]] %>
+<div class="set panel">
+  <h3>Profiles</h3>
+  <p class="hint">A profile holds the client you launch and the paths that go with it. Everything
+    else, developer mode included, follows you across all of them.</p>
+
+  <% for _, p in ipairs(profiles) do %>
+    <div class="field">
+      <label>
+        <%= p.name %>
+        <% if p.id == profile.id then %><span class="pill live">active</span><% end %>
+      </label>
+      <div class="val">
+        <input type="text" name="name" value="<%= p.name %>" maxlength="40" autocomplete="off"
+               hx-post="/profiles/<%= p.id %>/rename" hx-trigger="change"
+               hx-target="#prefbody" hx-swap="innerHTML">
+        <% if p.id ~= profile.id then %>
+          <a class="browse" hx-post="/profiles/<%= p.id %>/activate">Use</a>
+          <a class="browse danger" hx-post="/profiles/<%= p.id %>/delete"
+             hx-target="#prefbody" hx-swap="innerHTML">Delete</a>
+        <% else %>
+          <span class="note">in use, so it cannot be deleted</span>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <% --[[ A real form, not a filtered keyup. htmx compiles a trigger filter with Function(), which
+          our CSP forbids, and its fallback for a filter it cannot compile is one that passes
+          everything: every keystroke fired, so a profile was created per letter typed.
+
+          A form needs no expression at all. Enter submits it natively, and the button says so. ]] %>
+  <form class="field" hx-post="/profiles/new" hx-target="#prefbody" hx-swap="innerHTML">
+    <label>New profile</label>
+    <div class="val">
+      <input type="text" name="name" placeholder="name it" maxlength="40" autocomplete="off">
+      <button class="browse" type="submit">Create</button>
+    </div>
+  </form>
+</div>
+
+<div class="set panel">
+  <h3>Launch</h3>
+  <p class="hint">Belongs to <b><%= profile.name %></b>. Another profile can answer differently.</p>
+  <div class="field">
+    <label>Launch after deploy <span class="pill">this profile</span></label>
+    <div class="val"><%- render("core:switch", { key = "autolaunch", on = autolaunch }) %></div>
+  </div>
+</div>
+
+<div class="set panel">
+  <h3>Startup</h3>
+  <p class="hint">With more than one profile, the hub can ask which to use before it opens. Answering
+    "remember my choice" turns this off; this is where it comes back.</p>
+  <div class="field">
+    <label>Ask which profile to use</label>
+    <div class="val">
+      <%- render("core:switch", { key = "ask_profile", on = ask_profile }) %>
+      <% if #profiles < 2 then %>
+        <span class="note">Only asked once a second profile exists.</span>
+      <% end %>
+    </div>
+  </div>
+</div>

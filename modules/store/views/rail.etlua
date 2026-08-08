@@ -1,0 +1,20 @@
+<section class="railx divide">
+  <div class="sec">
+    <h2><%= heading %></h2>
+    <span class="spacer"></span>
+    <span class="aside"><a href="/store">Browse all <%= total %> →</a></span>
+    <div class="sorts">
+      <% for _, s in ipairs(sorts) do %>
+        <a class="<%= s.key == sort and 'on' or '' %>"
+           href="/store?sort=<%= s.key %>"
+           hx-get="/store/rail?sort=<%= s.key %>" hx-target="closest section"
+           hx-swap="outerHTML"><%= s.label %></a>
+      <% end %>
+    </div>
+    <div class="arrows">
+      <button onclick="railScroll(this,-1)" aria-label="Scroll left">&#8249;</button>
+      <button onclick="railScroll(this,1)" aria-label="Scroll right">&#8250;</button>
+    </div>
+  </div>
+  <%- render("grid", { modules = modules }) %>
+</section>

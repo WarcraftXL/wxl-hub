@@ -1,0 +1,22 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>WarcraftXL Hub</title>
+<meta http-equiv="Content-Security-Policy" content="<%= csp %>">
+<link rel="icon" href="/static/logo.png">
+<script src="/vendor/htmx.min.js"></script>
+<link rel="stylesheet" href="<%= stylesheet %>">
+
+<div class="splash">
+  <img class="logo" src="/static/logo.png" alt="">
+  <div class="spinner"></div>
+  <div class="name">Warcraft<em>XL</em></div>
+
+  <div id="flavour"><%- render("flavour", { line = line, step = step }) %></div>
+</div>
+
+<!-- Polls until boot lands. While loading the endpoint returns a fresh flavour line; once ready it
+     answers with HX-Redirect and the browser leaves on its own. -->
+<div hx-get="/boot/status"
+     hx-trigger="load delay:200ms, every 400ms"
+     hx-target="#flavour"
+     hx-swap="innerHTML"></div>

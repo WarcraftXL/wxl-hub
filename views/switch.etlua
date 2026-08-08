@@ -1,0 +1,6 @@
+<% --[[ Posts, then replaces itself with the server's idea of the new state, so the toggle can never
+        show something the database does not. `back` is only needed by keys that change the page
+        around them. ]] %>
+<a class="switch <%= on and 'on' or '' %>" role="button" tabindex="0"
+   hx-post="/settings/toggle/<%= key %><%= back and ('?back=' .. back) or '' %>"
+   hx-swap="outerHTML"></a>

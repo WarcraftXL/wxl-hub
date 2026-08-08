@@ -1,0 +1,89 @@
+<div class="listing-hero">
+  <% if cover then %><img src="<%= cover %>" alt=""><% end %>
+  <div class="veil"></div>
+  <div class="txt">
+    <h1><%= rec.listing.title %></h1>
+    <p class="tag"><%= rec.listing.tagline %></p>
+    <div class="chips">
+      <span class="chip">v<%= ext.version %></span>
+      <span class="chip">ABI <%= ext.abi %></span>
+      <span class="chip"><%= rec.license or "no licence" %></span>
+      <span class="chip <%= rec.official and 'ok' or '' %>"><%= rec.official and "Official" or "Community" %></span>
+      <% for _, c in ipairs(rec.listing.categories or {}) do %><span class="chip"><%= c %></span><% end %>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div style="padding-top:1.6rem"><%- render("crumbs", { trail = trail }) %></div>
+  <div class="cols" style="padding-top:.4rem">
+    <main>
+      <div class="gallery">
+        <% for _, url in ipairs(shots) do %><img src="<%= url %>" alt="" loading="lazy"><% end %>
+      </div>
+      <% --[[ body_html is core/markdown.lua output: the author's input is already escaped there,
+              so raw insertion is what lets the rendered Markdown stay Markdown. ]] %>
+      <div class="mdbody"><%- body_html %></div>
+    </main>
+
+    <aside class="panel">
+      <% if next(ext.requires or {}) then %>
+        <h3>Requires</h3>
+        <ul>
+        <% for id, range in pairs(ext.requires) do %>
+          <li><code><%= id %></code> <span><%= range %></span></li>
+        <% end %>
+        </ul>
+      <% end %>
+
+      <% if #(ext.conflicts or {}) > 0 then %>
+        <h3>Conflicts with</h3>
+        <ul>
+        <% for _, id in ipairs(ext.conflicts) do %>
+          <li class="bad"><code><%= id %></code></li>
+        <% end %>
+        </ul>
+      <% end %>
+
+      <% if #(ext.hooks or {}) > 0 then %>
+        <% --[[ The heading carries the word "priority" once. Repeating it on every row spent half
+                the column's width saying the same thing fifteen times, which is what left the long
+                names nowhere to go. ]] %>
+        <h3>Hooks <span class="hint">priority</span></h3>
+        <ul>
+        <% for _, h in ipairs(ext.hooks) do %>
+          <li><code><%= h.target %></code> <span><%= h.priority or "default" %></span></li>
+        <% end %>
+        </ul>
+      <% end %>
+
+      <% if installed then %>
+        <div class="install is-on">Installed &middot; v<%= installed.version %></div>
+        <div class="job"><a class="browse" href="/library">Manage in the library</a></div>
+      <% elseif rec.installable then %>
+        <div class="install" id="installbtn" hx-post="/store/<%= rec.id %>/install"
+             hx-target="next .job" hx-swap="outerHTML">Install</div>
+        <div class="job"></div>
+      <% else %>
+        <div class="install is-off">Install</div>
+        <div class="job"><span class="phase"><%= rec.why_not %></span></div>
+      <% end %>
+
+      <div class="health">
+        <% if #rec.problems == 0 then %>
+          <p class="ok">Manifest valid, 0 problems.</p>
+        <% else %>
+          <ul class="problems">
+          <% for _, p in ipairs(rec.problems) do %>
+            <li class="<%= p.level %>"><b><%= p.field %></b> <%= p.message %></li>
+          <% end %>
+          </ul>
+        <% end %>
+      </div>
+    </aside>
+  </div>
+
+  <p style="color:#4b5262;font-size:.8rem;margin-top:2rem">
+    Fetched live from <code><%= rec.repo %></code> · <%= table.concat(log, " · ") %>
+  </p>
+</div>
