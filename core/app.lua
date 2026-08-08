@@ -50,10 +50,13 @@ function M.serve(port, token, opts)
   local jobs     = require("core.jobs")
   local notify   = require("core.notify")
   local launch   = require("core.launch")
+  local update   = require("core.update")
   local mediator = require("core.mediator")
   require("core.helpers").install()
 
-  db.open(opts.db or "hub.db")
+  -- Not "hub.db". The working directory is a per-build cache folder, so a relative name would give
+  -- every build its own database and hand the user an empty hub after every update.
+  db.open(opts.db or require("core.release").db())
   migrate.init(db.handle())
   for _, r in ipairs(migrate.run("core/migrations")) do
     if r.status ~= "skipped" then print(("  %s %s"):format(r.status, r.path)) end
@@ -118,6 +121,12 @@ function M.serve(port, token, opts)
   local shown = { idx = -1, step = nil }
 
   app.before = function(req, res)
+    -- A request reaching here proves the tree the bootstrap picked can load every module, open the
+    -- database and bind its socket. That is what an update has to demonstrate before it is kept, so
+    -- this is where it is declared healthy. Idempotent, and first: the splash is a request too, and
+    -- an update that only ever got as far as the splash still booted.
+    update.confirm()
+
     if UNGATED[req.path] then return false end
 
     if not boot.ready() then
@@ -129,6 +138,11 @@ function M.serve(port, token, opts)
       }))
       return true
     end
+
+    -- Past the splash, so the startup fetch has landed and there is a real page coming to carry a
+    -- toast. Idempotent, and it queues rather than renders: what it found has no request of its own
+    -- to ride on, because the fetch that found it was answering nobody.
+    update.announce()
 
     -- A module may need an answer before the app opens: today it is which profile to use, tomorrow
     -- it could be a licence or a first-run path. Core knows only that a gate can exist and that it

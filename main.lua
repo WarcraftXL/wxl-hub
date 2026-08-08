@@ -32,6 +32,16 @@ local function version()
   return ((bundle.readfile("VERSION") or "dev"):gsub("%s+$", ""))
 end
 
+-- First line of a file, trimmed. nil when there is no file, which is how every marker here is read:
+-- absent and empty mean the same thing to the caller.
+local function slurp(path)
+  local fd = io.open(path, "rb")
+  if not fd then return nil end
+  local s = (fd:read("*l") or ""):gsub("%s+$", "")
+  fd:close()
+  return s ~= "" and s or nil
+end
+
 local function mkdirp(path)
   local acc
   for part in path:gmatch("[^/\\]+") do
@@ -58,11 +68,55 @@ local function unpack_to(dst)
   walk("")
 end
 
+-- Which unpacked tree to run.
+--
+-- The executable ships one, and the updater can leave a newer one beside it. This function is the
+-- only thing that chooses between them, and it is also the one piece of the program a payload
+-- update can never replace: the copy that runs is always the executable's own. It therefore does as
+-- little as possible, and everything it does is reversible.
+--
+-- The guard is the reason it is worth the lines. `trying` is written here and cleared by the
+-- application once it has served a page, so finding one on entry means the tree it names loaded far
+-- enough to be chosen and never came up. That candidate is dropped and the shipped tree runs
+-- instead. A bad payload costs one launch rather than an install.
+local function choose(hub, shipped, ours)
+  local updates = hub .. "/updates"
+
+  if uv.fs_stat(updates .. "/trying") then
+    os.remove(updates .. "/trying")
+    os.remove(updates .. "/USE")
+    return shipped, "an update failed to start and was rolled back"
+  end
+
+  local name = slurp(updates .. "/USE")
+  -- The name reaches a path, so it is checked as one. Anything outside this alphabet, ".." first
+  -- among them, is not a folder this program wrote.
+  if not name or not name:match("^[%w%.%-_]+$") then return shipped end
+
+  local candidate = updates .. "/" .. name
+  if not uv.fs_stat(candidate .. "/.ok") then return shipped end
+
+  -- A payload states the oldest executable it will run under. Build stamps are yyyymmdd-hhmmss, so
+  -- comparing them as text is comparing them as dates. Refusing here is the whole reason a payload
+  -- may assume things about its container: the alternative is finding out by crashing.
+  local floor = slurp(candidate .. "/REQUIRES")
+  if floor and floor > ours then
+    return shipped, ("update %s needs a newer WarcraftXL Hub and was skipped"):format(name)
+  end
+
+  local fd = io.open(updates .. "/trying", "wb")
+  if not fd then return shipped end
+  fd:write(name)
+  fd:close()
+  return candidate
+end
+
 local bundled = is_bundled()
 
 if bundled then
   local root = (os.getenv("LOCALAPPDATA") or os.getenv("TEMP")):gsub("\\", "/")
-  local dst  = root .. "/WarcraftXL/hub/" .. version()
+  local hub  = root .. "/WarcraftXL/hub"
+  local dst  = hub .. "/" .. version()
 
   -- The marker is written last, so an unpack interrupted halfway is retried rather than trusted.
   local done = uv.fs_stat(dst .. "/.unpacked")
@@ -74,20 +128,28 @@ if bundled then
     fd:close()
   end
 
-  uv.chdir(dst)
+  local live, why = choose(hub, dst, version())
+  uv.chdir(live)
 
   -- The shipped binary is a GUI-subsystem PE, so there is no console for `print` to reach. Without
   -- somewhere to put it, a failure before the window opens is indistinguishable from nothing
   -- happening at all.
-  local log = io.open(dst .. "/hub.log", "w")
+  local log = io.open(live .. "/hub.log", "w")
   if log then
-    log:write("wxl-hub ", version(), "\n")
     print = function(...)
       local parts = {}
       for i = 1, select("#", ...) do parts[i] = tostring((select(i, ...))) end
       log:write(table.concat(parts, "\t"), "\n")
       log:flush()
     end
+    -- Through print rather than straight onto the handle, so it is flushed. A line written to the
+    -- buffer and never flushed is lost if the process is killed, which is exactly the run whose log
+    -- anyone would want to read.
+    print("wxl-hub " .. version())
+    -- Two launches of the same executable can be running different code, and this is where anyone
+    -- reading a bug report finds out which.
+    if live ~= dst then print("payload " .. (slurp(live .. "/PAYLOAD") or "?")) end
+    if why then print(why) end
   end
 end
 

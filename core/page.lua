@@ -122,7 +122,20 @@ end
 -- Returned rather than queued: a toast belongs to the reply that caused it, so it cannot outlive its
 -- reason or arrive attached to some later request.
 function M.toast(level, title, text)
-  return view.render("toast", { level = level, title = title, text = text })
+  return view.render("toast", { level = level, title = title, text = text, oob = true })
+end
+
+-- Toasts with no reply to ride on, waiting for the next full page.
+--
+-- The exception to the rule above, and a narrow one. Something discovered while the splash was up
+-- has no request to attach itself to: the fetch that found it was answering nobody. Rather than let
+-- it be lost or invent a place for it, it waits here for the first page that renders, which is the
+-- first moment there is a window to show it in.
+local waiting = {}
+
+--- Leave a toast for the next full page render.
+function M.queue(level, title, text)
+  waiting[#waiting + 1] = { level = level, title = title, text = text }
 end
 
 --- Render a full page around `body`.
@@ -135,7 +148,14 @@ end
 function M.render(body, opts)
   opts = opts or {}
   local counts = M.counts()
+
+  -- Drained, not read: a queued toast is shown by the first page that renders and by no other.
+  local toasts = {}
+  for i = 1, #waiting do toasts[i] = view.render("toast", waiting[i]) end
+  waiting = {}
+
   return view.render("layout", {
+    toasts     = table.concat(toasts),
     -- Suffixed here so no caller has to remember to. A tab reading only "Store" says nothing once
     -- the window is one of a dozen.
     title      = opts.title and (opts.title .. " · WarcraftXL Hub") or "WarcraftXL Hub",

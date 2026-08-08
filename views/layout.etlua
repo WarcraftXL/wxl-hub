@@ -40,8 +40,11 @@
 <% end %>
 
 <% --[[ Toasts are appended here out of band by whatever response raised them. Part of the layout, so
-        navigating away is also what clears the ones that have already faded. ]] %>
-<div id="toasts" aria-live="polite"></div>
+        navigating away is also what clears the ones that have already faded.
+
+        It starts empty except for anything raised before there was a page to raise it on, which is
+        what core.page's queue holds. ]] %>
+<div id="toasts" aria-live="polite"><%- toasts or "" %></div>
 
 <%- body %>
 

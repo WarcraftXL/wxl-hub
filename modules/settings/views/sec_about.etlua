@@ -1,0 +1,62 @@
+<div class="set panel">
+  <h3>Version</h3>
+  <p class="hint">The application and the executable carrying it are versioned separately: an update
+    replaces the first and leaves the second where you put it.</p>
+
+  <div class="field">
+    <label>Application</label>
+    <div class="val"><span class="note"><%= payload %></span></div>
+  </div>
+
+  <div class="field">
+    <label>Executable</label>
+    <div class="val">
+      <span class="note"><%= build or "running from a source tree" %></span>
+    </div>
+  </div>
+</div>
+
+<div class="set panel">
+  <h3>Updates</h3>
+
+  <% if not installed then %>
+    <p class="hint">Nothing to update. This hub is running from a checkout, where the files on disk
+      are already the ones you are editing.</p>
+
+  <% elseif staged then %>
+    <p class="hint">Version <%= staged %> is installed and waiting. Close the hub and open it again
+      to start using it.</p>
+    <div class="field">
+      <label>Ready</label>
+      <div class="val">
+        <span class="ok"><%= staged %></span>
+        <span class="spacer"></span>
+        <button class="browse danger" hx-post="/settings/update/discard"
+                hx-target="#prefbody" hx-swap="innerHTML">Discard it</button>
+      </div>
+    </div>
+
+  <% elseif available then %>
+    <p class="hint">Only the application is downloaded, about <%= available.size %>. The executable
+      is left alone and nothing is run.</p>
+    <div class="field">
+      <label>Version <%= available.version %></label>
+      <div class="val">
+        <button class="browse gold" hx-post="/settings/update/install"
+                hx-target="#updatejob" hx-swap="outerHTML">Install it</button>
+        <% if available.notes then %>
+          <a class="browse ghost" href="<%= available.notes %>"
+             target="_blank" rel="noopener noreferrer">What changed</a>
+        <% end %>
+      </div>
+    </div>
+    <div class="job" id="updatejob"></div>
+
+  <% elseif known then %>
+    <p class="hint">Up to date. The hub checks when it starts, along with everything else it fetches
+      then, so this answer is as old as the rest of the page.</p>
+
+  <% else %>
+    <p class="hint">No release information yet. The check runs at startup and needs the network.</p>
+  <% end %>
+</div>

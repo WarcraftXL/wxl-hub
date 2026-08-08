@@ -8,7 +8,7 @@
         It removes itself in CSS: the animation ends collapsed, transparent and click-through, so
         there is no timer to run and no request to spend on tidying up. The container is part of the
         layout, so navigating away clears whatever is left. ]] %>
-<div hx-swap-oob="beforeend:#toasts">
+<% if oob then %><div hx-swap-oob="beforeend:#toasts"><% end %>
   <div class="toast <%= level %>" role="status">
     <span class="ico">
       <% if level == "good" then %>&#10003;
@@ -20,4 +20,4 @@
       <% if text then %><span><%= text %></span><% end %>
     </span>
   </div>
-</div>
+<% if oob then %></div><% end %>

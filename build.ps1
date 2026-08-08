@@ -6,10 +6,24 @@
 #   .\build.ps1              -> build\wxl-hub.exe
 #   .\build.ps1 -Compile     -> bytecode-compiled, smaller and faster to start
 #   .\build.ps1 -Run         -> build, then launch it
+#
+# It also emits build\wxl-hub-payload.zip: the same application without luvi and without the native
+# libraries. That is what the in-app updater installs, and it is why -Release matters. The version
+# passed there is written into the tree as PAYLOAD and is the only thing an installed hub compares
+# against a published release, so a build left at the default advertises itself as dev and is
+# offered nothing.
 
 param(
     [switch]$Compile,
-    [switch]$Run
+    [switch]$Run,
+
+    # The version this build calls itself. CI passes the tag; a developer has no reason to.
+    [string]$Release = 'dev',
+
+    # The oldest executable build stamp this payload will run under, or empty for any. Set it when
+    # the application starts needing something only a newer container carries, a new native library
+    # above all: the bootstrap then skips the payload and says so instead of failing to start.
+    [string]$RequiresExe = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -104,9 +118,15 @@ $out   = Join-Path $root 'build\wxl-hub.exe'
 if (Test-Path (Join-Path $root 'build')) { Remove-Item -Recurse -Force (Join-Path $root 'build') }
 New-Item -ItemType Directory -Force $stage | Out-Null
 
-# A build stamp doubles as the unpack directory name, so two builds never share a cache.
+# A build stamp doubles as the unpack directory name, so two builds never share a cache. It is not
+# the release version and cannot be: two builds of 0.1.0 have to stay apart on disk.
 $version = Get-Date -Format 'yyyyMMdd-HHmmss'
 Set-Content -Path (Join-Path $stage 'VERSION') -Value $version -Encoding ascii -NoNewline
+
+# The other half of the identity: which version of the application this tree is, as opposed to which
+# container it arrived in. The updater moves this one and leaves VERSION alone.
+Set-Content -Path (Join-Path $stage 'PAYLOAD') -Value $Release -Encoding ascii -NoNewline
+Set-Content -Path (Join-Path $stage 'REQUIRES') -Value $RequiresExe -Encoding ascii -NoNewline
 
 function Stage($relative) {
     $src = Join-Path $root $relative
@@ -148,11 +168,33 @@ Remove-Item $branded -Force
 
 $was = Set-ExeGuiSubsystem $out
 
+# The payload: the staged tree minus everything the executable already provides.
+#
+# VERSION goes because it describes the container, which an update does not replace, and the two
+# native folders go because a DLL cannot be swapped under a running process and does not need to be:
+# the updater copies them across from the tree the executable unpacked. What is left is Lua,
+# templates and images, which is all that ever changes between releases.
+$payloadDir = Join-Path $root 'build\payload'
+$payloadZip = Join-Path $root 'build\wxl-hub-payload.zip'
+Copy-Item $stage $payloadDir -Recurse -Force
+foreach ($drop in 'VERSION', 'deps\webview', 'deps\sqlite') {
+    Remove-Item (Join-Path $payloadDir $drop) -Recurse -Force -ErrorAction SilentlyContinue
+}
+# The wildcard is what keeps the entries at the root of the archive rather than under a payload\
+# folder. Both unpack correctly, and only one of them reads as an archive of the application.
+Compress-Archive -Path (Join-Path $payloadDir '*') -DestinationPath $payloadZip -Force
+Remove-Item $payloadDir -Recurse -Force
+
 $size = (Get-Item $out).Length
+$psize = (Get-Item $payloadZip).Length
 Write-Output ''
 Write-Output ("  {0}" -f $out)
-Write-Output ("  {0:N1} MB   version {1}" -f ($size / 1MB), $version)
+Write-Output ("  {0:N1} MB   build {1}   release {2}" -f ($size / 1MB), $version, $Release)
 Write-Output ("  icon embedded, subsystem {0} -> 2 (GUI, no console)" -f $was)
+Write-Output ''
+Write-Output ("  {0}" -f $payloadZip)
+Write-Output ("  {0:N0} KB   what the in-app updater installs{1}" -f ($psize / 1KB),
+              $(if ($RequiresExe) { "   needs build >= $RequiresExe" } else { '' }))
 Write-Output ''
 Write-Output '  Single file. On first launch it unpacks to'
 Write-Output ("  %LOCALAPPDATA%\WarcraftXL\hub\{0}\ and runs from there." -f $version)

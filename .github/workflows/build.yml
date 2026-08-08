@@ -1,21 +1,32 @@
-# Builds wxl-hub.exe, and publishes it when a version tag is pushed.
+# Builds wxl-hub.exe and its payload, and publishes a release for every commit that lands on main.
 #
-# The job is deliberately the same three commands a developer runs: fetch the pinned dependencies,
-# compile-check the sources, build the executable. Nothing here knows anything build.ps1 does not,
-# so a green run means the documented local build works, not that some parallel CI path does.
+# The job is deliberately the same commands a developer runs: fetch the pinned dependencies,
+# compile-check the sources, build. Nothing here knows anything build.ps1 does not, so a green run
+# means the documented local build works, not that some parallel CI path does.
+#
+# Versioning is automatic and nothing has to be tagged by hand. The series below is the only number
+# anyone edits, and only when a release is worth calling a new one.
 
 name: build
 
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  # Major and minor. The patch is the commit count, so every commit on main is a version and this
+  # line is the whole of the ceremony: bump it when a release deserves to be called something new.
+  SERIES: '1.0'
+
+  # Which clock decides what "today" means for the R number. The runner is on UTC, and a commit
+  # pushed late in the evening in Paris would otherwise be counted as the next day's first build.
+  TIMEZONE: 'Romance Standard Time'
 
 defaults:
   run:
@@ -31,8 +42,15 @@ jobs:
     # this on anything else.
     runs-on: windows-latest
 
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      name:    ${{ steps.v.outputs.name }}
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The patch number is the commit count, which a shallow clone cannot produce.
+          fetch-depth: 0
 
       # deps\ holds four pinned binaries and none of them are committed. Caching them keeps the
       # webview compile, which is the only slow step, off every run that did not change the pins.
@@ -61,30 +79,61 @@ jobs:
           .\deps\luvi\luvi-Windows-amd64-luajit-regular.exe scripts\check
           if ($LASTEXITCODE -ne 0) { throw "sources do not compile" }
 
-      - name: Build
-        run: .\build.ps1 -Compile
-
-      - name: Name the artifact
-        id: name
+      # Two identities, and they are not interchangeable.
+      #
+      # The **version** is what an installed hub compares against a published release, and the
+      # comparison is semver: three numbers, and anything else compares equal to everything, which
+      # would mean no update is ever detected and nothing anywhere saying why. So the version is
+      # series.commit-count, which only ever goes up and needs nobody to remember anything.
+      #
+      # The **name** is for people. It carries the day's build number and the time, which is what
+      # actually tells two builds of the same afternoon apart at a glance.
+      - name: Work out the version
+        id: v
         run: |
-          $version = if ($env:GITHUB_REF -like 'refs/tags/v*') {
-            $env:GITHUB_REF -replace '^refs/tags/v', ''
-          } else {
-            'dev-' + $env:GITHUB_SHA.Substring(0, 7)
-          }
-          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          Write-Host "version $version"
+          $tz    = [TimeZoneInfo]::FindSystemTimeZoneById($env:TIMEZONE)
+          $local = [TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $tz)
+          $since = [TimeZoneInfo]::ConvertTimeToUtc($local.Date, $tz).ToString('o')
 
+          $count = [int](git rev-list --count HEAD)
+          # Clamped, because a commit authored just before local midnight can leave the day's count
+          # at zero, and R000 is not a build number anyone would recognise.
+          $today = [Math]::Max(1, [int](git rev-list --count --since="$since" HEAD))
+
+          $release = $env:GITHUB_EVENT_NAME -eq 'push' -and $env:GITHUB_REF -eq 'refs/heads/main'
+          $version = if ($release) { "$env:SERIES.$count" } else { 'dev-' + $env:GITHUB_SHA.Substring(0, 7) }
+          $name    = "WarcraftXL Hub R{0:d3} - {1:yyyy-MM-dd HH:mm}" -f $today, $local
+
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "name=$name"       | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "$version   $name"
+
+      - name: Build
+        run: .\build.ps1 -Compile -Release ${{ steps.v.outputs.version }}
+
+      # Both, always. The payload is useless without an executable old enough to have shipped once,
+      # and an executable published without its payload leaves everyone already running the hub with
+      # no way to move.
       - uses: actions/upload-artifact@v4
         with:
-          name: wxl-hub-${{ steps.name.outputs.version }}
-          path: build/wxl-hub.exe
+          name: wxl-hub-${{ steps.v.outputs.version }}
+          path: |
+            build/wxl-hub.exe
+            build/wxl-hub-payload.zip
           if-no-files-found: error
 
-  # Only ever on a tag. A release is a deliberate act, not something a merge to main performs.
+  # Every commit on main becomes a release, tag included. The tag is created by this job from the
+  # version above rather than pushed by hand, and a tag created with GITHUB_TOKEN does not start
+  # another run, so there is no loop to break.
+  #
+  # Published outright, not drafted. A draft is invisible to the hub, which reads the newest
+  # published release and skips drafts and prereleases both, so drafting every build would mean
+  # building updates nobody is ever offered. Flip `prerelease` to true below if you would rather
+  # each build be held back until you promote it: everything stays automatic and shipping becomes
+  # one switch on the release page.
   release:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     # A job's permissions replace the workflow's rather than adding to them, so `contents: write`
     # alone would take away the read access the download step needs. Both are named here.
@@ -106,8 +155,12 @@ jobs:
       - name: Publish
         uses: softprops/action-gh-release@v2
         with:
-          files: wxl-hub.exe
+          tag_name: v${{ needs.build.outputs.version }}
+          name: ${{ needs.build.outputs.name }}
+          # The payload asset name is a contract: core/boot.lua looks for wxl-hub-payload*.zip on the
+          # newest published release and offers nothing if it is not there.
+          files: |
+            wxl-hub.exe
+            wxl-hub-payload.zip
           generate_release_notes: true
-          # Drafted rather than published outright: the tag is the trigger, the last look is still a
-          # human's.
-          draft: true
+          prerelease: false

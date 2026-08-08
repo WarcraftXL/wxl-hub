@@ -23,6 +23,9 @@
       <div class="install is-on" id="installbtn" hx-swap-oob="true">Installed</div>
       <span class="ok">&#10003; installed</span>
       <a class="browse" href="/library">Library</a>
+    <% elseif job.kind == "update" then %>
+      <span class="ok">&#10003; ready</span>
+      <span class="phase">restart the hub to use it</span>
     <% else %>
       <span class="ok">&#10003; done</span>
     <% end %>
