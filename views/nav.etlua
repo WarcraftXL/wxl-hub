@@ -1,0 +1,10 @@
+<% --[[ The bar's links. Shared by the whole document and by the fragment a navigation answers with,
+        because the highlight is the one part of the shell that depends on which page you are on.
+
+        `oob` is what tells htmx to take this out of the response and put it where the matching id
+        already is, instead of swapping it into the target with everything else. ]] %>
+<nav class="nav" id="topnav"<% if oob then %> hx-swap-oob="true"<% end %>>
+  <% for _, item in ipairs(nav) do %>
+    <a class="<%= item.on and 'on' or '' %>" href="<%= item.href %>"><%= item.label %></a>
+  <% end %>
+</nav>

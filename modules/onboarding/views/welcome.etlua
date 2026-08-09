@@ -11,19 +11,21 @@
         shows makes sense before these answers exist. Every field saves as it is filled in rather
         than on submit, so closing the window half way through loses nothing and the button at the
         end only records that the question was asked. ]] %>
-<div class="choose">
+<div class="choose tall">
   <div class="cbox panel welcome">
     <img src="/static/logo.png" alt="">
     <h1>Welcome to Warcraft<em>XL</em></h1>
     <p>Three answers and you are in. All of them change later, in Settings.</p>
 
     <div class="wstep">
-      <label for="wname">What should we call you?</label>
+      <% --[[ The answer lands beside the question rather than under the field: a line that appears
+              below an input shoves the rest of the form down every time you pause typing. ]] %>
+      <label for="wname">What should we call you? <span id="wsaid" class="wsaid"></span></label>
       <div class="val">
         <input id="wname" name="value" value="<%= name %>" maxlength="40" autocomplete="off"
                placeholder="Your name"
                hx-post="/welcome/name" hx-trigger="change, keyup changed delay:500ms"
-               hx-swap="none">
+               hx-target="#wsaid" hx-swap="outerHTML">
       </div>
       <span class="whint">It names your profile. A second profile can have a second name.</span>
     </div>

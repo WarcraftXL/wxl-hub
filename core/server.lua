@@ -123,7 +123,16 @@ local function parse_request(raw)
     cookies = parse_cookies(headers.cookie),
     body    = body,
     form    = form,
-    htmx    = headers["hx-request"] == "true",
+    -- A navigation from a link the shell already framed, rather than the browser being pointed at a
+    -- URL. The difference decides how much of the document is worth sending back.
+    boosted = headers["hx-boosted"] == "true",
+
+    -- Deliberately not just "htmx sent this". A boosted navigation carries htmx's header too, and
+    -- `htmx` is what four modules read to answer with a piece of the page they are already on: the
+    -- store's filtered grid, the library's list. Given that test unqualified, asking for a different
+    -- page returns the current page's insides, and the document loses the parts that frame it.
+    -- Written once here rather than as `and not req.boosted` in each of them.
+    htmx    = headers["hx-request"] == "true" and headers["hx-boosted"] ~= "true",
   }
 end
 

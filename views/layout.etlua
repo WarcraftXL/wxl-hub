@@ -8,16 +8,28 @@
 <%- render("pickfolder", {}) %>
 <link rel="stylesheet" href="<%= stylesheet %>">
 
+<% --[[ The shell is built once and stays. Every link inside it fetches the page it points at and
+        replaces only `#view`, so the bar, the tray and the status bar are never rebuilt: they keep
+        their state, their blur surface, and they do not replay their entrance on each click. That is
+        the whole difference between a window showing pages and a window that has pages in it.
+
+        The server answers such a request with the fragment rather than the document; see
+        views/layout_view.etlua. Typing the same URL by hand still gets a whole page, because what
+        decides is the header htmx sends, not the address.
+
+        Where the fragment lands is decided by that same answer, through HX-Retarget. It cannot be an
+        `hx-target` here: an element's target is inherited by every htmx element beneath it, and the
+        ones that mean "swap me" do not say so, they simply leave it out. The notification panel, a
+        job's progress element and every self-replacing fragment in the app would have been aimed at
+        the page body. ]] %>
+<body hx-boost="true">
+
 <header class="top">
   <a class="brand" href="/">
     <img src="/static/logo.png" alt="">
     <span>Warcraft<em>XL</em></span>
   </a>
-  <nav class="nav">
-    <% for _, item in ipairs(nav) do %>
-      <a class="<%= item.on and 'on' or '' %>" href="<%= item.href %>"><%= item.label %></a>
-    <% end %>
-  </nav>
+  <%- render("nav", { nav = nav }) %>
   <span class="spacer"></span>
 
   <% --[[ The bell polls for its own count; the downloads pip is rendered with the page and refreshed
@@ -48,7 +60,9 @@
         what core.page's queue holds. ]] %>
 <div id="toasts" aria-live="polite"><%- toasts or "" %></div>
 
-<%- body %>
+<% --[[ The one part of the document that changes between pages, and therefore the only part a
+        navigation replaces. ]] %>
+<div id="view"><%- body %></div>
 
 <script>
   // The whole of the app's JavaScript. Neither function holds state or talks to the server on its
@@ -72,7 +86,9 @@
 </script>
 
 <% if discord then %>
-<a class="fab" href="<%= discord %>" target="_blank" rel="noopener noreferrer">
+<% --[[ Left alone by the boosting above: it leaves for a browser, and there is no `#view` at the
+        other end of it. ]] %>
+<a class="fab" href="<%= discord %>" target="_blank" rel="noopener noreferrer" hx-boost="false">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M21 11.5a8.5 8.5 0 0 1-12.2 7.7L3 21l1.9-5.6A8.5 8.5 0 1 1 21 11.5z"/>
@@ -83,8 +99,8 @@
 
 <footer>
   <span class="figs">
-    <span><b><%= stats.modules %></b> modules</span>
-    <span><b><%= stats.authors %></b> authors</span>
+    <span><b><%= stats.modules %></b> module<%= tonumber(stats.modules) == 1 and "" or "s" %></span>
+    <span><b><%= stats.authors %></b> author<%= tonumber(stats.authors) == 1 and "" or "s" %></span>
     <span>catalogue <b><%= cache_age %></b></span>
   </span>
   <span class="note">Read from GitHub. A repository is listed once it publishes a wxl.json.</span>

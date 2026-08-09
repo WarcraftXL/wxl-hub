@@ -56,7 +56,7 @@
       <% end %>
 
     <% else %>
-      <div class="dlempty">
+      <div class="empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M4 21h16"/>
@@ -79,7 +79,14 @@
     </div>
 
     <% if #pending == 0 then %>
-      <p class="noresult">Everything installed is at the version the catalogue offers.</p>
+      <% --[[ Said the way the panel above it says the same kind of thing. A grey sentence adrift in
+              an empty band, ten centimetres under a proper empty state, made one page answer "there
+              is nothing here" in two different voices. ]] %>
+      <div class="empty bare">
+        <b>Everything is up to date</b>
+        <span>A module that publishes a newer version queues here, and waits for you to accept
+          it.</span>
+      </div>
     <% else %>
       <div class="hist">
         <% for _, p in ipairs(pending) do %>

@@ -85,6 +85,10 @@ function M.serve(port, token, opts)
       flip = true,
     },
     store = "https://bnetcmsus-a.akamaihd.net/cms/blog_header/e8/E8WQFI083QTW1738635431840.png",
+    downloads =
+      "https://bnetcmsus-a.akamaihd.net/cms/blog_header/d8/D84JV9ZJWDS01772587429618.png",
+    settings =
+      "https://bnetcmsus-a.akamaihd.net/cms/blog_header/zq/ZQIXYN40KUPU1764984459732.png",
   }
 
   local available = tools.detect { "python", "git" }
@@ -127,6 +131,18 @@ function M.serve(port, token, opts)
   local shown = { idx = -1, step = nil }
 
   app.before = function(req, res)
+    -- Before the gates, so it is set for every request that can end up rendering anything.
+    page.begin(req)
+
+    -- A navigation is answered with the part of the document that changes, so htmx is told here
+    -- where to put it. On the response rather than on the markup: an `hx-target` attribute is
+    -- inherited by everything under it, and most fragments in the app mean "replace me" by leaving
+    -- the target out entirely.
+    if req.boosted then
+      res:header("HX-Retarget", "#view")
+      res:header("HX-Reswap", "outerHTML show:window:top")
+    end
+
     if ungated(req.path) then return false end
 
     if not boot.ready() then
@@ -140,13 +156,30 @@ function M.serve(port, token, opts)
       return true
     end
 
-    -- A module may need an answer before the app opens: today it is which profile to use, tomorrow
-    -- it could be a licence or a first-run path. Core knows only that a gate can exist and that it
-    -- returns a page. It does not know the question, and it does not know who is asking.
-    local gate = mediator.ask("startup.gate", req.path)
-    if gate then
-      res:html(gate)
-      return true
+    -- Questions that have to be answered before the app opens: today the first-run form and the
+    -- profile choice, tomorrow a licence or a migration notice. Core knows only that questions
+    -- exist, that each owns a stretch of the URL space, and that the first one still unanswered is
+    -- the one to put on screen. It does not know what any of them ask.
+    --
+    -- A collection rather than a single provider, because there is no reason two modules cannot both
+    -- want something before the hub opens. When it was one slot, whoever held it had to answer for
+    -- everyone, and unrelated questions ended up branching inside one module.
+    local questions = mediator.collect("startup.question")
+
+    -- A question's own flow has to reach its own handlers, or it would answer the very posts that
+    -- fill it in. Declared once, here, instead of a path test written again inside each module that
+    -- asks something: two copies of this rule is how a poll that belonged to a form ended up being
+    -- served the form.
+    for _, q in ipairs(questions) do
+      if q.owns and req.path:sub(1, #q.owns) == q.owns then return false end
+    end
+
+    for _, q in ipairs(questions) do
+      local asked = q.render and q.render()
+      if asked then
+        res:html(asked)
+        return true
+      end
     end
 
     return false
@@ -294,6 +327,26 @@ function M.run()
     hidden = true, background = { 0x10, 0x12, 0x16 },
   }
   win:icon("assets/logo.ico")
+
+  -- Back where it was left, if it was ever left anywhere. Applied while the window is still hidden,
+  -- so nobody watches it jump from the middle of the screen to its corner. The size above is only
+  -- the first launch's answer.
+  local geometry = require("core.geometry")
+  local remembered = geometry.read()
+  if remembered then
+    win:place(remembered)
+    print(("window restored to %dx%d at %d,%d%s"):format(
+      remembered.w, remembered.h, remembered.x, remembered.y,
+      remembered.maximised and ", maximised" or ""))
+  end
+
+  -- Asked for by the page, because the page is the only part of this that gets told when anything
+  -- happened. Reading the placement is cheap and writing only happens when it has actually changed,
+  -- so a chatty caller costs nothing.
+  win:bind("wxlGeom", function()
+    geometry.write(win:placement())
+    return "null"
+  end)
   print("window created, hidden until the first page reports in")
 
   -- The one thing the UI thread does that is not "show a page". A folder dialog is modal and has to
@@ -328,7 +381,29 @@ function M.run()
     if not visible then visible = true; print("window shown") end
     return "null"
   end)
-  win:init("addEventListener('DOMContentLoaded',function(){window.wxlReady&&wxlReady()})")
+  -- The class it leaves behind is what any entrance animation hangs off. A CSS animation starts when
+  -- the style is first resolved, which here is while the window is still hidden, so an animation
+  -- written the ordinary way has already run part of its course by the time anyone can see it: the
+  -- top of the page looks placed and the bottom snaps into position.
+  --
+  -- Set on failure as well as on success, because the stylesheet treats its absence as "do not
+  -- animate" rather than as "stay invisible". A binding that never answers must cost the page its
+  -- entrance, never its content.
+  -- The second half of this is what remembers the window. There is no close event to hang it on, so
+  -- it reports at the three moments the answer can have changed: a document arrived, a drag or a
+  -- resize came to rest, and the window lost focus, which is what happens on the way to closing it.
+  win:init([[
+addEventListener('DOMContentLoaded', function () {
+  var lit = function () { document.documentElement.classList.add('wxl-shown') };
+  window.wxlReady ? wxlReady().then(lit, lit) : lit();
+
+  var save = function () { window.wxlGeom && wxlGeom() };
+  var idle;
+  addEventListener('resize', function () { clearTimeout(idle); idle = setTimeout(save, 400) });
+  addEventListener('blur', save);
+  save();
+});
+]])
 
   -- Hidden again, and not out of superstition. `webview_get_native_handle` can still answer nothing
   -- straight after create, and a hide that found no handle did nothing at all: that is the window

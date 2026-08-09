@@ -353,7 +353,15 @@ function M.with_window()
     return "true"
   end)
 
-  win:init("addEventListener('DOMContentLoaded',function(){window.wxlReady&&wxlReady()})")
+  -- Same script as the application's window, and for the same reason: see core/app.lua. The class is
+  -- what any entrance animation waits on, so that it runs against a window that is on screen rather
+  -- than against one still hidden.
+  win:init([[
+addEventListener('DOMContentLoaded', function () {
+  var lit = function () { document.documentElement.classList.add('wxl-shown') };
+  window.wxlReady ? wxlReady().then(lit, lit) : lit();
+});
+]])
   -- Hidden again, and not out of superstition. `webview_get_native_handle` can still answer nothing
   -- straight after create, and a hide that found no handle did nothing at all: that is the window
   -- that turned up showing its background colour and no page. Here the handle certainly exists, and

@@ -13,7 +13,6 @@
 local page     = require("core.page")
 local mediator = require("core.mediator")
 local style    = require("core.style")
-local client   = require("core.client")
 
 local profiles = dofile("modules/profiles/models/profiles.lua")
 
@@ -34,6 +33,16 @@ return function(router, mod, ctx)
   mediator.provide("profile.name",     function()
     local p = profiles.active()
     return p and p.name or nil
+  end)
+
+  --- Rename the profile in use. Answers with the problem, or nil when there was none: `ask` carries
+  --- one value back, and the half worth carrying is the half that says why it did not work.
+  ---
+  --- No id in the signature, on purpose. A caller outside this module has one profile in mind, the
+  --- one every scoped value it reads already belongs to.
+  mediator.provide("profile.rename", function(name)
+    local _, why = profiles.rename(profiles.active().id, name)
+    return why
   end)
 
   -- ------------------------------------------------------------- the section ---
@@ -97,83 +106,28 @@ return function(router, mod, ctx)
   -- down would make the next launch skip the question it was told to ask.
   local chosen = false
 
-  --- Core asks every module whether it needs an answer before the app opens. It never learns what
-  --- the question is, or that profiles are the ones asking.
-  mediator.provide("startup.gate", function(path)
-    -- The form's own posts have to reach their handlers, or the gate would answer them with the
-    -- form again and nothing could ever be filled in.
-    if path:find("^/welcome/") then return nil end
+  --- One of the questions core asks before opening the app. It never learns what this one is, only
+  --- that it exists and which paths belong to it.
+  mediator.contribute("startup.question", {
+    id = "which-profile", order = 20,
+    owns = "/profiles/use/",
 
-    -- First run. Asked before the profile question, and instead of it: there is exactly one profile
-    -- at this point, so there is nothing to choose between.
-    if not profiles.bool("onboarded") then
+    render = function()
+      if chosen then return nil end
+      if not profiles.bool("ask_profile") then return nil end
+
+      local list = profiles.profiles()
+      if #list < 2 then return nil end          -- one profile is not a choice
+
       local active = profiles.active()
-      local where  = profiles.get("client_path")
-      return view.render("welcome", {
-        stylesheet  = style.href,
-        csp         = page.CSP_PLAIN,
-        name        = active and active.name or "",
-        client_path = where,
-        client      = client.inspect(where),
-        developer   = profiles.bool("developer"),
+      return view.render("chooseprofile", {
+        stylesheet = style.href,
+        csp        = page.CSP_PLAIN,
+        profiles   = list,
+        active     = active and active.id or nil,
       })
-    end
-
-    if chosen or path:find("^/profiles/use/") then return nil end
-    if not profiles.bool("ask_profile") then return nil end
-
-    local list = profiles.profiles()
-    if #list < 2 then return nil end            -- one profile is not a choice
-
-    local active = profiles.active()
-    return view.render("chooseprofile", {
-      stylesheet = style.href,
-      csp        = page.CSP_PLAIN,
-      profiles   = list,
-      active     = active and active.id or nil,
-    })
-  end)
-
-  -- ------------------------------------------------------------ first run ---
-  -- Each field saves on its own. The button at the end records that the question has been asked,
-  -- not the answers: closing the window half way through keeps whatever was already typed.
-  router:post("/welcome/name", function(req, res)
-    local active = profiles.active()
-    if active then profiles.rename(active.id, req.form.value or "") end
-    res:nothing()
-  end)
-
-  router:post("/welcome/client", function(req, res)
-    profiles.set("client_path", req.form.value or "")
-    res:html(view.render("welcome_client", { client = client.inspect(profiles.get("client_path")) }))
-  end)
-
-  -- Its own switch rather than the shared one, which posts to a settings route the gate would
-  -- intercept. One element is a smaller price than a partial that has to know about both.
-  router:post("/welcome/dev", function(req, res)
-    local on = profiles.toggle("developer")
-    res:html(('<a class="switch %s" role="button" tabindex="0" hx-post="/welcome/dev" '
-              .. 'hx-swap="outerHTML"></a>'):format(on and "on" or ""))
-  end)
-
-  -- Fetches wxl-core and applies it. Answers with the job element, which polls itself through
-  -- /jobs/:id like every other transfer in the app.
-  router:post("/welcome/patch", function(req, res)
-    local job, why = require("core.deploy").start(profiles.get("client_path"))
-    if not job then
-      return res:html(view.render("core:job", { job = { state = "failed", error = why } }))
-    end
-    res:html(view.render("core:job", { job = require("core.jobs").view(job) }))
-  end)
-
-  router:get("/welcome/verdict", function(req, res)
-    res:html(view.render("welcome_client", { client = client.inspect(profiles.get("client_path")) }))
-  end)
-
-  router:post("/welcome/done", function(req, res)
-    profiles.set("onboarded", "1")
-    res:hx_redirect("/")
-  end)
+    end,
+  })
 
   router:post("/profiles/use/:id", function(req, res)
     chosen = true

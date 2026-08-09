@@ -63,4 +63,9 @@ end
 function M.db()  return M.installed and (M.hub .. "/hub.db")  or "hub.db"  end
 function M.log() return M.installed and (M.hub .. "/hub.log") or "hub.log" end
 
+--- Where the window was left. Beside the two above, and a file rather than a row in the database:
+--- the window belongs to the thread that has no database, and this is a fact about this screen and
+--- this machine rather than anything a profile owns.
+function M.window() return M.installed and (M.hub .. "/window") or "window" end
+
 return M

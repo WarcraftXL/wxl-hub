@@ -34,7 +34,9 @@
       <button class="wfix" hx-post="/welcome/patch" hx-target="#wjob" hx-swap="innerHTML">
         Set up this client
       </button>
-      <div id="wjob" class="job"></div>
+      <% --[[ A bare slot. The fragment that lands here is a `.job` itself, and giving the container
+              the class too stacks two sets of the same spacing, one of which draws nothing. ]] %>
+      <div id="wjob"></div>
     <% end %>
   <% end %>
 </div>
