@@ -12,9 +12,9 @@
 ]]
 
 local modules  = require("core.modules")
-local view     = require("core.view")
-local style    = require("core.style")
-local mediator = require("core.mediator")
+local view     = require("core.base.view")
+local style    = require("core.ui.style")
+local mediator = require("core.base.mediator")
 
 local M = {}
 
@@ -56,7 +56,7 @@ end
 --- not fresh. Only a hub that has never fetched, or whose cache expired with no network to refresh
 --- it, is offline in the sense that matters here.
 function M.online()
-  return require("core.boot").state ~= "offline"
+  return require("core.extensions.boot").state ~= "offline"
 end
 
 local function ago(seconds)
@@ -72,7 +72,7 @@ end
 -- normal operation, not a problem, and warning on every launch inside the eight-hour window would
 -- teach people to ignore the bar that matters.
 function M.staleness()
-  local boot = require("core.boot")
+  local boot = require("core.extensions.boot")
   if boot.source ~= "stale" then return nil end
   return {
     -- The live age, not the one recorded when it was adopted: an offline session goes on, and the
@@ -94,7 +94,7 @@ function M.counts()
   end
   return {
     unread = safe(function() return require("core.notify").unread() end),
-    queued = safe(function() return require("core.upgrade").count() end),
+    queued = safe(function() return require("core.extensions.upgrade").count() end),
   }
 end
 
@@ -179,7 +179,7 @@ function M.render(body, opts)
     nav        = modules.nav(opts.active, developer(), M.online()),
     stylesheet = style.href,
     csp        = opts.untrusted and CSP_UNTRUSTED or CSP_OWN,
-    discord   = require("core.news").support().discord or M.config.discord,
+    discord   = require("core.extensions.news").support().discord or M.config.discord,
     profile   = mediator.ask_or("profile.name", "Default"),
     unread    = counts.unread,
     queued    = counts.queued,

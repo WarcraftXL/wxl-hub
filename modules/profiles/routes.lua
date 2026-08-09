@@ -10,9 +10,9 @@
   whoever owns the settings rail place it.
 ]]
 
-local page     = require("core.page")
-local mediator = require("core.mediator")
-local style    = require("core.style")
+local page     = require("core.ui.page")
+local mediator = require("core.base.mediator")
+local style    = require("core.ui.style")
 
 local profiles = dofile("modules/profiles/models/profiles.lua")
 

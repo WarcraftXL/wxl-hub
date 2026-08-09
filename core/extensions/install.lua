@@ -12,7 +12,7 @@
 
 local uv    = require("uv")
 local jobs  = require("core.jobs")
-local db    = require("core.db")
+local db    = require("core.base.db")
 
 local M = {}
 

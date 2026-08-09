@@ -1,7 +1,7 @@
 --[[
   The stylesheet, as something the browser can cache.
 
-  core/theme.lua is the source and stays a Lua file, because it is written and commented like one.
+  core/ui/theme.lua is the source and stays a Lua file, because it is written and commented like one.
   This file is about delivery. Interpolating the sheet into a <style> block makes every full page
   carry the whole thing again, with no way for the browser to know it already has it.
 
@@ -17,7 +17,7 @@ local M = {}
 
 -- Two sources, one sheet. Motion is joined last so its rules settle any tie with the theme's, and
 -- so the reduced-motion block at its end is the final word on every animation declared above it.
-M.css = require("core.theme") .. require("core.animations")
+M.css = require("core.ui.theme") .. require("core.ui.animations")
 
 -- Ten hex characters. This names a file rather than proving anything about it, and the whole sheet
 -- is a build input the user never supplies.

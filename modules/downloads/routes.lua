@@ -1,9 +1,9 @@
-local page     = require("core.page")
+local page     = require("core.ui.page")
 local jobs     = require("core.jobs")
-local install  = require("core.install")
-local upgrade  = require("core.upgrade")
+local install  = require("core.extensions.install")
+local upgrade  = require("core.extensions.upgrade")
 local notify   = require("core.notify")
-local mediator = require("core.mediator")
+local mediator = require("core.base.mediator")
 
 return function(router, mod, ctx)
   local view = mod.view

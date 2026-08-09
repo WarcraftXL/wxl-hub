@@ -13,7 +13,7 @@
   invents one.
 ]]
 
-local manifest = require("core.manifest")
+local manifest = require("core.extensions.manifest")
 
 -- `by_id` is the same rows again, keyed. Every page asks after a specific module: the library once
 -- per installed row, the update check once per row again. Answering those by walking the list makes

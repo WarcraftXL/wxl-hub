@@ -8,7 +8,7 @@
   Backed by SQLite, so the list survives a restart, which is the only reason it is worth having.
 ]]
 
-local db = require("core.db")
+local db = require("core.base.db")
 
 local M = {}
 

@@ -12,7 +12,7 @@
 ]]
 
 local uv     = require("uv")
-local router = require("core.router")
+local router = require("core.base.router")
 
 local M = {}
 

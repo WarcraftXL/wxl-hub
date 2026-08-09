@@ -8,10 +8,10 @@
   nothing here worth showing: no news, no catalogue, no store. The library is, so we go there.
 ]]
 
-local page     = require("core.page")
+local page     = require("core.ui.page")
 local history  = require("core.history")
-local news     = require("core.news")
-local mediator = require("core.mediator")
+local news     = require("core.extensions.news")
+local mediator = require("core.base.mediator")
 local modules  = require("core.modules")
 
 local function take(list, n)

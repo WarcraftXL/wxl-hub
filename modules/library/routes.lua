@@ -1,8 +1,8 @@
-local page     = require("core.page")
-local db       = require("core.db")
-local install  = require("core.install")
-local upgrade  = require("core.upgrade")
-local mediator = require("core.mediator")
+local page     = require("core.ui.page")
+local db       = require("core.base.db")
+local install  = require("core.extensions.install")
+local upgrade  = require("core.extensions.upgrade")
+local mediator = require("core.base.mediator")
 
 return function(router, mod, ctx)
   local view = mod.view

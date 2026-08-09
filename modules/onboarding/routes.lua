@@ -11,10 +11,10 @@
   it questions.
 ]]
 
-local page     = require("core.page")
-local mediator = require("core.mediator")
-local style    = require("core.style")
-local client   = require("core.client")
+local page     = require("core.ui.page")
+local mediator = require("core.base.mediator")
+local style    = require("core.ui.style")
+local client   = require("core.game.client")
 
 local deploy = dofile("modules/onboarding/models/deploy.lua")
 

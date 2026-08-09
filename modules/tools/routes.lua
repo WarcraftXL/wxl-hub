@@ -10,7 +10,7 @@
   queued for. Behind developer mode, so nobody else meets it.
 ]]
 
-local page = require("core.page")
+local page = require("core.ui.page")
 
 local NOT_BUILT = {
   title = "Tools are being rebuilt",

@@ -13,7 +13,7 @@
   unchosen, so that changing a default later actually reaches the people who never touched it.
 ]]
 
-local db = require("core.db")
+local db = require("core.base.db")
 
 local M = {}
 

@@ -13,9 +13,9 @@
 ]]
 
 local uv       = require("uv")
-local migrate  = require("core.migrate")
-local view     = require("core.view")
-local mediator = require("core.mediator")
+local migrate  = require("core.base.migrate")
+local view     = require("core.base.view")
+local mediator = require("core.base.mediator")
 
 local M = { loaded = {}, failed = {} }
 

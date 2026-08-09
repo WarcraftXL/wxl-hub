@@ -12,8 +12,8 @@
 
 local uv    = require("uv")
 local json  = require("deps.lua.json")
-local cache = require("core.cache")
-local news  = require("core.news")
+local cache = require("core.base.cache")
+local news  = require("core.extensions.news")
 
 local TOPIC     = "wxl-modules"
 local CORE_REPO = "WarcraftXL/wxl-core"
@@ -58,7 +58,7 @@ local function job(topic, core_repo, progress_path)
   package.path = "./?.lua;./?/init.lua;" .. package.path
   local http     = require("ffi.winhttp")
   local json     = require("deps.lua.json")
-  local manifest = require("core.manifest")
+  local manifest = require("core.extensions.manifest")
 
   local RAW = "https://raw.githubusercontent.com/"
 

@@ -9,12 +9,12 @@
   Any module can add a page here by contributing to that point. This file will not learn about it.
 ]]
 
-local page     = require("core.page")
-local client   = require("core.client")
-local mediator = require("core.mediator")
-local cache    = require("core.cache")
-local boot     = require("core.boot")
-local migrate  = require("core.migrate")
+local page     = require("core.ui.page")
+local client   = require("core.game.client")
+local mediator = require("core.base.mediator")
+local cache    = require("core.base.cache")
+local boot     = require("core.extensions.boot")
+local migrate  = require("core.base.migrate")
 local modules  = require("core.modules")
 local release  = require("core.release")
 

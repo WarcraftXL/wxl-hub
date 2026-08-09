@@ -10,7 +10,7 @@
 ]]
 
 local uv     = require("uv")
-local client = require("core.client")
+local client = require("core.game.client")
 
 local M = {}
 

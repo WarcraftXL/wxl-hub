@@ -7,7 +7,7 @@
 
   The window flag is the reason this file exists rather than `os.execute`. The hub is a GUI-subsystem
   binary with no console of its own, so anything it starts through the C runtime gets a black window
-  flashed on screen for as long as it runs. core/tools.lua avoids the problem by never spawning
+  flashed on screen for as long as it runs. core/game/tools.lua avoids the problem by never spawning
   anything; here the program has to actually run.
 ]]
 

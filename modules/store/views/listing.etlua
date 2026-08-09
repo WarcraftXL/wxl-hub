@@ -21,7 +21,7 @@
       <div class="gallery">
         <% for _, url in ipairs(shots) do %><img src="<%= url %>" alt="" loading="lazy"><% end %>
       </div>
-      <% --[[ body_html is core/markdown.lua output: the author's input is already escaped there,
+      <% --[[ body_html is core/base/markdown.lua output: the author's input is already escaped there,
               so raw insertion is what lets the rendered Markdown stay Markdown. ]] %>
       <div class="mdbody"><%- body_html %></div>
     </main>

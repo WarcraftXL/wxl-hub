@@ -1,5 +1,5 @@
 -- Template helpers, registered once on core.view and available in every template.
-local view = require("core.view")
+local view = require("core.base.view")
 
 local M = {}
 
@@ -18,7 +18,7 @@ function M.install()
   -- Normalised here so the config can stay a bare URL in the common case and only grow a table when
   -- a picture actually needs mirroring.
   view.helper("pageimage", function(id)
-    local v = require("core.page").config.images[id]
+    local v = require("core.ui.page").config.images[id]
     if type(v) == "string" then return { src = v } end
     return v
   end)
