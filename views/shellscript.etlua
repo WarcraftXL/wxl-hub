@@ -1,0 +1,22 @@
+<% --[[ The whole of the app's JavaScript, shared by every shell. Neither function holds state or talks
+        to the server on its own: anything that changes something goes through htmx, the same way a
+        form post would.
+
+        In a partial rather than in each layout, because two copies of a listener drift, and the one
+        that drifts is always the one on the shell nobody is looking at. ]] %>
+<script>
+  // Purely visual: nudging a horizontal rail by a screenful.
+  function railScroll(btn, dir) {
+    const track = btn.closest('.railx').querySelector('.track');
+    track.scrollBy({ left: dir * track.clientWidth * 0.8, behavior: 'smooth' });
+  }
+
+  // A <details> closes on its own summary but not on a click elsewhere, which leaves the panel
+  // hanging open behind whatever you meant to do next. One listener, and it survives htmx swapping
+  // the tray because it looks the element up at click time rather than holding a reference.
+  document.addEventListener('click', function (e) {
+    document.querySelectorAll('.tray details[open]').forEach(function (d) {
+      if (!d.contains(e.target)) d.removeAttribute('open');
+    });
+  });
+</script>

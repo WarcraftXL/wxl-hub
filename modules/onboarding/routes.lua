@@ -16,8 +16,6 @@ local mediator = require("core.base.mediator")
 local style    = require("core.ui.style")
 local client   = require("core.game.client")
 
-local deploy = dofile("modules/onboarding/models/deploy.lua")
-
 return function(router, mod, ctx)
   local view = mod.view
 
@@ -84,12 +82,19 @@ return function(router, mod, ctx)
 
   -- Fetches the framework and applies it. Answers with the job element, which polls itself through
   -- /jobs/:id like every other transfer in the app.
+  --
+  -- Asked for by name rather than loaded from a path. The job belongs to the workspace, which offers
+  -- it as a tool of its own; this form only borrows it, the same way it borrows the settings and the
+  -- profile it writes to. Nobody providing it means the button reports that, which is the right
+  -- failure for a screen that has to open whatever else is missing.
   router:post("/welcome/patch", function(req, res)
-    local job, why = deploy.start(get("client_path"))
-    if not job then
-      return res:html(view.render("core:job", { job = { state = "failed", error = why } }))
+    local r = mediator.ask("client.deploy", get("client_path"),
+                           { url = "/welcome/verdict", target = "#wverdict" })
+              or { error = "nothing here can set up a client" }
+    if not r.job then
+      return res:html(view.render("core:job", { job = { state = "failed", error = r.error } }))
     end
-    res:html(view.render("core:job", { job = require("core.jobs").view(job) }))
+    res:html(view.render("core:job", { job = require("core.jobs").view(r.job) }))
   end)
 
   -- Asked for by id from inside the job element once the install lands: the lines above it were

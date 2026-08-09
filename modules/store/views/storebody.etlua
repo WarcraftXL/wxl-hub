@@ -52,19 +52,19 @@
       <div class="active">
         <% if (f.q or "") ~= "" then %>
           <a href="<%= href{ q = '' } %>" hx-get="<%= href{ q = '' } %>"
-             hx-target="#storebody" hx-swap="outerHTML" hx-push-url="true">“<%= f.q %>” <i>×</i></a>
+             hx-target="#storebody" hx-swap="outerHTML" hx-push-url="true">“<%= f.q %>” <i><%- icon("x") %></i></a>
         <% end %>
         <% if f.src then %>
           <a href="<%= href{ src = f.src } %>" hx-get="<%= href{ src = f.src } %>"
-             hx-target="#storebody" hx-swap="outerHTML" hx-push-url="true"><%= f.src %> <i>×</i></a>
+             hx-target="#storebody" hx-swap="outerHTML" hx-push-url="true"><%= f.src %> <i><%- icon("x") %></i></a>
         <% end %>
         <% if f.cat then %>
           <a href="<%= href{ cat = f.cat } %>" hx-get="<%= href{ cat = f.cat } %>"
-             hx-target="#storebody" hx-swap="outerHTML" hx-push-url="true"><%= f.cat %> <i>×</i></a>
+             hx-target="#storebody" hx-swap="outerHTML" hx-push-url="true"><%= f.cat %> <i><%- icon("x") %></i></a>
         <% end %>
         <% if f.author then %>
           <a href="<%= href{ author = f.author } %>" hx-get="<%= href{ author = f.author } %>"
-             hx-target="#storebody" hx-swap="outerHTML" hx-push-url="true"><%= f.author %> <i>×</i></a>
+             hx-target="#storebody" hx-swap="outerHTML" hx-push-url="true"><%= f.author %> <i><%- icon("x") %></i></a>
         <% end %>
       </div>
     <% end %>
@@ -95,11 +95,7 @@
 
     <% elseif #results == 0 then %>
       <div class="empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-          <path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
-        </svg>
+        <%- icon("package") %>
         <b>No module has been published yet</b>
         <span>A repository tagged <code>wxl-modules</code> shows up here as soon as it carries a
           <code>wxl.json</code> at its root. There is nothing to submit and no account to

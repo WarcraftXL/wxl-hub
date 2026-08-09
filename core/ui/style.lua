@@ -15,9 +15,12 @@ local ossl = require("openssl")
 
 local M = {}
 
--- Two sources, one sheet. Motion is joined last so its rules settle any tie with the theme's, and
--- so the reduced-motion block at its end is the final word on every animation declared above it.
-M.css = require("core.ui.theme") .. require("core.ui.animations")
+-- Three sources, one sheet. Motion is joined last so its rules settle any tie with the others', and
+-- so the reduced-motion block at its end is the final word on every animation declared above it,
+-- the workspace's included.
+M.css = require("core.ui.theme")
+     .. require("core.ui.workbench")
+     .. require("core.ui.animations")
 
 -- Ten hex characters. This names a file rather than proving anything about it, and the whole sheet
 -- is a build input the user never supplies.

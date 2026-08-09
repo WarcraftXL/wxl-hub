@@ -86,7 +86,6 @@ return function(router, mod, ctx)
         return view.render("sec_developer", {
           s         = { core_path = path_of("core_path") },
           developer = mediator.ask("setting.bool", "developer") == true,
-          python    = ctx.tools and ctx.tools.python or nil,
         })
       end },
 

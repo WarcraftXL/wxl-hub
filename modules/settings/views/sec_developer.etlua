@@ -21,14 +21,4 @@
     </div>
   </div>
 
-  <div class="field">
-    <label>Python interpreter</label>
-    <div class="val">
-      <% if python then %>
-        <span class="note"><%= python %></span><span class="ok">&#10003; found</span>
-      <% else %>
-        <span class="warn">not found, the tool pages stay disabled</span>
-      <% end %>
-    </div>
-  </div>
 </div>

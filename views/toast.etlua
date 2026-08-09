@@ -11,9 +11,9 @@
 <% if oob then %><div hx-swap-oob="beforeend:#toasts"><% end %>
   <div class="toast <%= level %>" role="status">
     <span class="ico">
-      <% if level == "good" then %>&#10003;
-      <% elseif level == "bad" then %>&#10007;
-      <% else %>&bull;<% end %>
+      <% if level == "good" then %><%- icon("check") %>
+      <% elseif level == "bad" then %><%- icon("x") %>
+      <% else %><%- icon("info") %><% end %>
     </span>
     <span class="t">
       <b><%= title %></b>

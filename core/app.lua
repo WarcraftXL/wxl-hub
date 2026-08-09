@@ -91,7 +91,9 @@ function M.serve(port, token, opts)
       "https://bnetcmsus-a.akamaihd.net/cms/blog_header/zq/ZQIXYN40KUPU1764984459732.png",
   }
 
-  local available = tools.detect { "python", "git" }
+  -- Python is gone from this list on purpose: the pipeline is being rewritten in Lua, so nothing the
+  -- hub drives will ask for an interpreter the user had to install first.
+  local available = tools.detect { "git" }
 
   print("boot:")
   boot.start()

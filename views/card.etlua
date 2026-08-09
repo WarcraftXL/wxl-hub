@@ -10,7 +10,7 @@
     <% for _, c in ipairs(mod.categories or {}) do %><span><%= c %></span><% end %>
   </span>
   <span class="foot">
-    <span>&#9733; <%= mod.stars %></span>
+    <span class="stars"><%- icon("star") %><%= mod.stars %></span>
     <span><%= since(mod.updated) %></span>
     <% --[[ A card never installs. It says what the listing will offer, and the listing is where the
             reason lives when the answer is no. ]] %>

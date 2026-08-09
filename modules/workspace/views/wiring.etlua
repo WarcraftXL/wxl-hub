@@ -1,0 +1,83 @@
+<% --[[ The hub, described by itself.
+
+        Not a debug dump. The mediator is the only thing holding the modules together, and it is
+        invisible by design: a capability nobody provides simply goes unanswered, which is the
+        behaviour we want and also the failure that is hardest to see. This is where you look when a
+        page renders but one part of it is quietly missing. ]] %>
+<div class="page">
+  <header class="wtitle">
+    <h1>Wiring</h1>
+    <p>What loaded, and how the parts reach each other. A capability with no provider is not an
+      error anywhere; it is a page that renders with one fewer thing on it.</p>
+  </header>
+
+  <% if #failed > 0 then %>
+    <section>
+      <div class="sec"><h2>Failed to load</h2></div>
+      <div class="panel">
+        <table class="wiring">
+          <% for _, f in ipairs(failed) do %>
+            <tr><td><code><%= f.id %></code></td><td><%= f.error %></td></tr>
+          <% end %>
+        </table>
+      </div>
+    </section>
+  <% end %>
+
+  <section>
+    <div class="sec"><h2>Modules</h2><span class="spacer"></span>
+      <span class="aside"><%= #loaded %> loaded</span></div>
+    <div class="panel">
+      <table class="wiring">
+        <tr><th>Id</th><th>Mount</th><th>Visibility</th><th class="n">Order</th>
+            <th class="n">Migrations</th></tr>
+        <% for _, m in ipairs(loaded) do %>
+          <tr>
+            <td><code><%= m.id %></code></td>
+            <td><%= m.mount or "" %></td>
+            <td><%= m.dev_only and "developer only" or "everyone" %></td>
+            <td class="n"><%= m.order %></td>
+            <td class="n"><%= #(m.migrations or {}) %></td>
+          </tr>
+        <% end %>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec"><h2>Capabilities</h2><span class="spacer"></span>
+      <span class="aside">one provider each</span></div>
+    <div class="panel">
+      <table class="wiring">
+        <% for _, name in ipairs(inventory.provides) do %>
+          <tr><td><code><%= name %></code></td></tr>
+        <% end %>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec"><h2>Collection points</h2><span class="spacer"></span>
+      <span class="aside">any number of contributors</span></div>
+    <div class="panel">
+      <table class="wiring">
+        <% for _, p in ipairs(inventory.points) do %>
+          <tr><td><code><%= p.name %></code></td><td class="n"><%= p.count %></td></tr>
+        <% end %>
+      </table>
+    </div>
+  </section>
+
+  <% if #inventory.events > 0 then %>
+    <section>
+      <div class="sec"><h2>Events</h2></div>
+      <div class="panel">
+        <table class="wiring">
+          <% for _, e in ipairs(inventory.events) do %>
+            <tr><td><code><%= e.name %></code></td><td class="n"><%= e.count %></td></tr>
+          <% end %>
+        </table>
+      </div>
+    </section>
+  <% end %>
+</div>

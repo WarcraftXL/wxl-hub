@@ -1,0 +1,62 @@
+<% --[[ Whether you can work, in one line, with the reasons folded away unless there are any.
+
+        It used to be a card carrying the path, an input, a hint and the six checks the first-run form
+        runs, all at once and above everything else on the page. That is a form about a folder, and it
+        was the first thing anyone read. A passing check is noise: the answer to "can I start" is one
+        word, and the folder only becomes interesting when the answer is no.
+
+        So the details open on their own when something needs doing, and stay shut when nothing does.
+        Same `<details>` the rail uses, for the same reason: the browser owns "this is open". ]] %>
+<details class="wstatus <%= t.state %>" id="wstatus"<% if t.state ~= "ok" then %> open<% end %>>
+  <summary>
+    <span class="dot"></span>
+    <span class="verdict"><%= t.verdict %></span>
+
+    <% if t.set then %>
+      <span class="facts">
+        <%= t.info.build or "unknown build" %>
+        <% if t.info.patched then %>&middot; patched<% else %>&middot; not patched<% end %>
+        <% if t.info.core.present then %>&middot; core <%= t.info.core.version or "present" %><% end %>
+      </span>
+      <span class="where" title="<%= t.path %>"><%= short(t.path) %></span>
+    <% end %>
+
+    <span class="spacer"></span>
+    <span class="more">Change<%- icon("chevron-right") %></span>
+  </summary>
+
+  <div class="pick">
+    <div class="val">
+      <input name="value" value="<%= t.path %>" autocomplete="off"
+             placeholder="D:\World of Warcraft"
+             hx-post="/workspace/target" hx-trigger="change"
+             hx-target="#wstatus" hx-swap="outerHTML">
+      <button class="browse" type="button" onclick="pickFolder(this)">Browse</button>
+    </div>
+    <span class="hint">
+      <% if t.own then %>
+        Chosen for the workspace. Empty the field to follow your active profile again.
+      <% else %>
+        Following your active profile. Point it somewhere else to work on another client.
+      <% end %>
+    </span>
+
+    <% if t.playing then %>
+      <span class="alarm"><%- icon("triangle-alert") %>This is the client your active profile
+        launches. Anything written here is written to the game you play tonight.</span>
+    <% end %>
+
+    <% if t.set then %>
+      <% --[[ Only what is wrong. A list where five lines out of six say nothing happened is a list
+              nobody finishes reading, and the sixth is the one that mattered. ]] %>
+      <div class="checks">
+        <% for _, c in ipairs(t.info.checks) do %>
+          <% if c.state ~= "ok" then %>
+            <span class="<%= c.state %>"><%- icon(c.state == "warn" and "triangle-alert" or "x")
+              %><%= c.label %><% if c.detail then %>: <%= c.detail %><% end %></span>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</details>

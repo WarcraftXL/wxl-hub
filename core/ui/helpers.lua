@@ -23,6 +23,12 @@ function M.install()
     return v
   end)
 
+  -- An icon by its Lucide name. A helper because a template asking for one should not have to know
+  -- where the set lives, and because the name is all a module ever declares.
+  view.helper("icon", function(name, class)
+    return require("core.ui.icons").svg(name, class)
+  end)
+
   -- A stable colour per id, so a card keeps its identity across sorts, filters and restarts.
   view.helper("markstyle", function(id)
     local h = hue(id)

@@ -45,6 +45,11 @@ body { margin: 0; padding-top: 84px; padding-bottom: 40px; background: var(--bg)
   font: 15px/1.6 var(--ui); -webkit-font-smoothing: antialiased }
 a { color: inherit; text-decoration: none }
 img { display: block }
+/* Every icon the app draws comes from core/ui/icons.lua and lands with this class. One em, so a mark
+   set inside a sentence follows the size of the text around it instead of being pinned to a pixel
+   value that is right in one place and wrong in the next. The handful of surfaces that do want a
+   fixed size say so further down and win by coming later. */
+svg.ico { width: 1em; height: 1em; flex: none; vertical-align: -.15em }
 
 /* ---------- floating top bar ---------- */
 .top {
@@ -109,6 +114,7 @@ img { display: block }
   display: flex; align-items: center; justify-content: center;
   color: var(--dimmer); font-size: .7rem; opacity: 0; transition: opacity .12s }
 .tpitem:hover .x { opacity: 1 }
+.tpitem .x svg { width: 12px; height: 12px }
 .tpitem .x:hover { background: rgba(224,115,109,.16); color: var(--red) }
 
 /* ---------- toasts ----------
@@ -141,6 +147,7 @@ img { display: block }
 .toast .ico { flex: none; width: 24px; height: 24px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: .74rem; background: rgba(255,255,255,.06); color: var(--dim) }
+.toast .ico svg { width: 13px; height: 13px }
 .toast.good .ico { background: rgba(127,216,143,.14); color: var(--green) }
 .toast.bad  .ico { background: rgba(224,115,109,.16); color: var(--red) }
 
@@ -195,6 +202,8 @@ section.divide::before {
 .sec { display: flex; align-items: center; gap: .8rem; margin-bottom: 1.15rem }
 .sec h2 { margin: 0; font-size: 1.12rem; font-weight: 600; letter-spacing: -.01em }
 .sec .aside { font-size: .86rem; color: var(--dimmer) }
+.sec .aside a { display: inline-flex; align-items: center; gap: .3rem }
+.sec .aside a svg { width: 14px; height: 14px }
 .sec .aside a:hover { color: var(--gold) }
 .sec .spacer { flex: 1 }
 
@@ -259,8 +268,10 @@ section.divide::before {
 .arrows { display: flex; gap: .35rem }
 .arrows button {
   width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line);
-  background: var(--panel); color: var(--dim); font-size: .9rem; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--panel); color: var(--dim); cursor: pointer;
 }
+.arrows button svg { width: 16px; height: 16px }
 .arrows button:hover { color: var(--text); border-color: #343b4a }
 
 /* ---------- module card ----------
@@ -288,6 +299,7 @@ section.divide::before {
 .cats span { font-size: .76rem; padding: .1rem .45rem; border-radius: 5px;
   background: rgba(255,255,255,.05); color: var(--dim) }
 .card .foot { display: flex; align-items: center; gap: 1rem; font-size: .84rem; color: var(--dimmer) }
+.card .foot .stars { display: flex; align-items: center; gap: .3rem }
 .card .foot .get { margin-left: auto; padding: .34rem .85rem; border-radius: 7px;
   border: 1px solid var(--line); color: var(--text); font-size: .84rem; transition: .12s }
 
@@ -351,18 +363,9 @@ section.divide::before {
   border-radius: 999px; border: 1px solid var(--gold-2); background: rgba(212,162,76,.1);
   color: var(--gold); font-size: .82rem }
 .active a:hover { background: rgba(212,162,76,.18) }
-.active a i { font-style: normal; opacity: .7; font-size: .95rem; line-height: 1 }
+.active a i { display: flex; opacity: .7 }
+.active a i svg { width: 13px; height: 13px }
 
-/* ---------- tools ---------- */
-.tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px,1fr)); gap: .9rem }
-.tool { display: flex; gap: .85rem; align-items: flex-start; padding: 1.15rem 1.25rem;
-  transition: border-color .12s }
-.tool:hover { border-color: #343b4a }
-.tool .ico { width: 32px; height: 32px; flex: none; border-radius: 8px; border: 1px solid var(--line);
-  display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: .95rem }
-.tool .t { min-width: 0; flex: 1 }
-.tool .t b { display: block; font-size: .92rem; font-weight: 600 }
-.tool .t span { font-size: .85rem; color: var(--dim) }
 .pill { flex: none; font-size: .74rem; color: var(--dimmer) }
 .pill.live { color: var(--green) }
 .pill.soon { opacity: .65 }
@@ -795,6 +798,7 @@ aside.panel li.bad code { color: var(--red) }
    colour half way through, which is how five separate facts became one unreadable strip. */
 .wverdict { display: flex; flex-direction: column; gap: .25rem; margin-top: .55rem;
   font-size: .81rem; animation: verdict .3s cubic-bezier(.16,1,.3,1) }
+.wverdict span { display: flex; align-items: center; gap: .4rem }
 .wverdict .ok   { color: var(--green) }
 .wverdict .warn { color: var(--gold) }
 .wverdict .bad  { color: var(--red) }
@@ -893,6 +897,7 @@ aside.panel li.bad code { color: var(--red) }
   margin-top: .6rem; font-size: .83rem; color: var(--dimmer) }
 .job:empty { display: none }
 .job .phase { min-width: 0; overflow: hidden; text-overflow: ellipsis }
+.job .ok, .job .bad { display: flex; align-items: center; gap: .35rem }
 .job .ok { color: var(--green) }
 .job .bad { color: var(--red) }
 .job .bar { flex: 1; height: 5px; border-radius: 999px; background: var(--line);

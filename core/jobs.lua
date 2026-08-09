@@ -126,6 +126,9 @@ function M.start(spec)
     kind    = spec.kind,
     label   = spec.label,
     ref     = spec.ref,
+    -- { url, target }: what the caller wants re-asked for once this finishes. Optional, and opaque
+    -- here; only the job partial reads it.
+    after   = spec.after,
     state   = "running",
     phase   = "starting",
     done    = 0,
@@ -322,6 +325,9 @@ function M.view(job)
     total_h = (job.total and job.total > 0) and M.size(job.total) or nil,
     eta     = eta and M.duration(eta) or nil,
     took    = job.finished and M.duration((job.finished - job.started) / 1000) or nil,
+    -- What the page that started this wants refreshed once it lands, as { url, target }. Carried by
+    -- the job because views/job.etlua is shared and cannot know which page it is on.
+    after   = job.after,
   }
 end
 
