@@ -1,0 +1,34 @@
+<div class="page">
+  <% --[[ A header rather than a section: the vertical rhythm rule would add a margin above the first
+          thing on the page, and this block already carries its own. ]] %>
+  <header class="wtitle">
+    <h1>Dev Workspace</h1>
+    <p>The WarcraftXL toolchain in one window. Every tool works on the same client, reports through
+      the same jobs and undoes itself the same way, so building for WarcraftXL is the work rather
+      than the setting up around it.</p>
+  </header>
+
+  <section><%- status %></section>
+
+  <section>
+    <div class="sec"><h2>Your tools</h2><span class="spacer"></span>
+      <span class="aside">the rail on the left has everything</span></div>
+
+    <% --[[ Kept, not catalogued. Which tools exist is the rail's job and the picker's; this grid is
+            the handful you run, in the order you added them. ]] %>
+    <%- favourites %>
+  </section>
+
+  <section>
+    <div class="sec"><h2>Activity</h2></div>
+    <div class="panel">
+      <% --[[ The slot the runner fills. Empty is the honest state until a tool that writes exists,
+              and it is worth showing rather than hiding because it is where a restore will be. ]] %>
+      <div class="empty bare">
+        <b>Nothing has run yet</b>
+        <span>Jobs started here stay on this list when you navigate away, with what they moved and
+          the way back.</span>
+      </div>
+    </div>
+  </section>
+</div>

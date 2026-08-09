@@ -1,0 +1,30 @@
+<% --[[ What the client currently carries. Asked for by id once a deploy lands, because every line here
+        was written before any of it was true. ]] %>
+<div class="dstate" id="dstate">
+  <div class="row">
+    <span class="k">Wow.exe</span>
+    <% if not t.set then %>
+      <span class="v dim">no client set</span>
+    <% elseif t.info.patched then %>
+      <span class="v ok"><%- icon("check") %>patched</span>
+    <% else %>
+      <span class="v warn"><%- icon("triangle-alert") %>not patched, the framework never loads</span>
+    <% end %>
+  </div>
+
+  <div class="row">
+    <span class="k">WarcraftXL.dll</span>
+    <% if not t.set then %>
+      <span class="v dim">no client set</span>
+    <% elseif t.info.core.present then %>
+      <span class="v ok"><%- icon("check") %><%= t.info.core.version or "present" %></span>
+    <% else %>
+      <span class="v warn"><%- icon("triangle-alert") %>not deployed</span>
+    <% end %>
+  </div>
+
+  <div class="row">
+    <span class="k">Folder</span>
+    <span class="v dim"><%= t.set and t.path or "pick one in the bar above" %></span>
+  </div>
+</div>

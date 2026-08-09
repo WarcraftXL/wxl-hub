@@ -5,6 +5,9 @@
         already is, instead of swapping it into the target with everything else. ]] %>
 <nav class="nav" id="topnav"<% if oob then %> hx-swap-oob="true"<% end %>>
   <% for _, item in ipairs(nav) do %>
-    <a class="<%= item.on and 'on' or '' %>" href="<%= item.href %>"><%= item.label %></a>
+    <% --[[ A boundary entry leads somewhere with a different shell, so it has to be a real
+            navigation: swapping `#view` alone would drop the new page under the old bar. ]] %>
+    <a class="<%= item.on and 'on' or '' %>" href="<%= item.href %>"<%
+       if item.boundary then %> hx-boost="false"<% end %>><%= item.label %></a>
   <% end %>
 </nav>

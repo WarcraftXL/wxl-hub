@@ -19,9 +19,9 @@
     <div class="field">
       <label><%= c.label %></label>
       <div class="val">
-        <% if c.state == "ok" then %><span class="ok">&#10003;</span>
-        <% elseif c.state == "warn" then %><span class="warn">!</span>
-        <% else %><span class="bad">&#10007;</span><% end %>
+        <% if c.state == "ok" then %><span class="ok"><%- icon("check") %></span>
+        <% elseif c.state == "warn" then %><span class="warn"><%- icon("triangle-alert") %></span>
+        <% else %><span class="bad"><%- icon("x") %></span><% end %>
         <span class="note"><%= c.detail %></span>
       </div>
     </div>

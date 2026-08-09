@@ -1,0 +1,42 @@
+<% --[[ Everything the workspace has that you are not already keeping, by category.
+
+        This is where the full list of tools went. It was the middle of the front page, which meant
+        reading a catalogue every time you came here to run one thing. Behind the plus it is the same
+        list, at the moment you actually want it. ]] %>
+<div class="favpick panel" id="wfav">
+  <div class="head">
+    <b>Add a tool</b>
+    <span class="spacer"></span>
+    <button class="close" title="Close"
+            hx-get="/workspace/favourites" hx-target="#wfav" hx-swap="outerHTML"><%- icon("x") %></button>
+  </div>
+
+  <% if #cats == 0 then %>
+    <div class="empty bare">
+      <b>Everything is already on your page</b>
+      <span>Remove one from a card to see it offered here again.</span>
+    </div>
+  <% end %>
+
+  <% for _, c in ipairs(cats) do %>
+    <div class="grp">
+      <span class="lbl"><%- icon(c.icon) %><%= c.name %></span>
+      <div class="opts">
+        <% for _, t in ipairs(c.tools) do %>
+          <% if t.path then %>
+            <button hx-post="/workspace/favourites/<%= t.id %>"
+                    hx-target="#wfav" hx-swap="outerHTML">
+              <%= t.name %>
+              <% if t.writes then %><span class="pen" title="Writes to the target"><%-
+                 icon("pencil") %></span><% end %>
+            </button>
+          <% else %>
+            <% --[[ Shown and not offered. Hiding it would make this disagree with the rail about
+                    what the workspace is going to be. ]] %>
+            <span class="off"><%= t.name %><em class="soon">planned</em></span>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

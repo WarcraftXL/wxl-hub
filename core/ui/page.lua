@@ -12,9 +12,9 @@
 ]]
 
 local modules  = require("core.modules")
-local view     = require("core.view")
-local style    = require("core.style")
-local mediator = require("core.mediator")
+local view     = require("core.base.view")
+local style    = require("core.ui.style")
+local mediator = require("core.base.mediator")
 
 local M = {}
 
@@ -56,7 +56,7 @@ end
 --- not fresh. Only a hub that has never fetched, or whose cache expired with no network to refresh
 --- it, is offline in the sense that matters here.
 function M.online()
-  return require("core.boot").state ~= "offline"
+  return require("core.extensions.boot").state ~= "offline"
 end
 
 local function ago(seconds)
@@ -72,7 +72,7 @@ end
 -- normal operation, not a problem, and warning on every launch inside the eight-hour window would
 -- teach people to ignore the bar that matters.
 function M.staleness()
-  local boot = require("core.boot")
+  local boot = require("core.extensions.boot")
   if boot.source ~= "stale" then return nil end
   return {
     -- The live age, not the one recorded when it was adopted: an offline session goes on, and the
@@ -94,7 +94,7 @@ function M.counts()
   end
   return {
     unread = safe(function() return require("core.notify").unread() end),
-    queued = safe(function() return require("core.upgrade").count() end),
+    queued = safe(function() return require("core.extensions.upgrade").count() end),
   }
 end
 
@@ -151,9 +151,22 @@ function M.begin(req)
   boosted = (req and req.boosted) or false
 end
 
+--- Whether this response is going into a document that is already on screen.
+--
+-- Read by whoever builds a piece of chrome, because the same markup has to be written in place in a
+-- whole document and marked out of band in a fragment. The alternative was building it twice.
+function M.boosted()
+  return boosted
+end
+
 --- Render a full page around `body`.
 --
--- opts: title, active (module id), untrusted (bool), cache_age
+-- opts: title, active (module id), untrusted (bool), cache_age, layout, chrome
+--
+-- `layout` names the shell, defaulting to the one every consumer-facing page uses. Nothing here has
+-- to learn what the other shells are: the boosted variant of a shell is its name with `_view`, which
+-- is the convention the two default layouts already followed. `chrome` is carried through untouched,
+-- for the pieces a shell has and this one does not.
 --
 -- The footer figures are asked for rather than passed in. Making every module carry the catalogue's
 -- statistics through its own handler was the coupling in miniature: four modules importing the store
@@ -170,7 +183,10 @@ function M.render(body, opts)
   -- A navigation from inside the app already has the shell on screen, so it is answered with the
   -- part that changes and the two pieces of shell that depend on which page it is. Same data either
   -- way: only how much of it is written out differs.
-  return view.render(boosted and "layout_view" or "layout", {
+  local layout = opts.layout or "layout"
+
+  return view.render(boosted and (layout .. "_view") or layout, {
+    chrome     = opts.chrome,
     toasts     = table.concat(toasts),
     -- Suffixed here so no caller has to remember to. A tab reading only "Store" says nothing once
     -- the window is one of a dozen.
@@ -179,7 +195,7 @@ function M.render(body, opts)
     nav        = modules.nav(opts.active, developer(), M.online()),
     stylesheet = style.href,
     csp        = opts.untrusted and CSP_UNTRUSTED or CSP_OWN,
-    discord   = require("core.news").support().discord or M.config.discord,
+    discord   = require("core.extensions.news").support().discord or M.config.discord,
     profile   = mediator.ask_or("profile.name", "Default"),
     unread    = counts.unread,
     queued    = counts.queued,

@@ -240,9 +240,9 @@ end
 
 --- Runs on the loop thread. One page, one status fragment, and the work behind them.
 function M.serve(port, token)
-  local server = require("core.server")
-  local view   = require("core.view")
-  local style  = require("core.style")
+  local server = require("core.base.server")
+  local view   = require("core.base.view")
+  local style  = require("core.ui.style")
 
   local app = server.new { token = token }
   app:static("/vendor/", "deps/htmx")
@@ -324,7 +324,7 @@ function M.with_window()
     uv2.chdir(cwd)
     package.path = "./?.lua;./?/init.lua;" .. package.path
     -- Required here, not closed over. A thread gets a fresh Lua state and every upvalue arrives nil.
-    require("core.log").install(require("core.release").log(), "launch")
+    require("core.base.log").install(require("core.release").log(), "launch")
     local ok, err = xpcall(function()
       require("core.launcher").serve(port, token)
     end, debug.traceback)
@@ -369,7 +369,7 @@ addEventListener('DOMContentLoaded', function () {
   win:hide()
 
   -- And only now is there something at the other end to navigate to.
-  if not require("core.server").wait(port) then
+  if not require("core.base.server").wait(port) then
     print("the server did not come up in time, showing whatever the browser makes of that")
   end
 

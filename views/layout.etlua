@@ -45,10 +45,7 @@
 
 <% if stale then %>
 <div class="stalebar">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-       stroke-linecap="round" aria-hidden="true">
-    <path d="M12 8v5M12 17h.01M10.3 3.9 1.8 18.2A2 2 0 0 0 3.5 21h17a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0z"/>
-  </svg>
+  <%- icon("triangle-alert") %>
   <span><%= stale.text %></span>
 </div>
 <% end %>
@@ -64,35 +61,13 @@
         navigation replaces. ]] %>
 <div id="view"><%- body %></div>
 
-<script>
-  // The whole of the app's JavaScript. Neither function holds state or talks to the server on its
-  // own: anything that changes something goes through htmx, the same way a form post would.
-
-  // Purely visual: nudging a horizontal rail by a screenful.
-  function railScroll(btn, dir) {
-    const track = btn.closest('.railx').querySelector('.track');
-    track.scrollBy({ left: dir * track.clientWidth * 0.8, behavior: 'smooth' });
-  }
-
-  // A <details> closes on its own summary but not on a click elsewhere, which leaves the panel
-  // hanging open behind whatever you meant to do next. One listener, and it survives htmx swapping
-  // the tray because it looks the element up at click time rather than holding a reference.
-  document.addEventListener('click', function (e) {
-    document.querySelectorAll('.tray details[open]').forEach(function (d) {
-      if (!d.contains(e.target)) d.removeAttribute('open');
-    });
-  });
-
-</script>
+<%- render("shellscript", {}) %>
 
 <% if discord then %>
 <% --[[ Left alone by the boosting above: it leaves for a browser, and there is no `#view` at the
         other end of it. ]] %>
 <a class="fab" href="<%= discord %>" target="_blank" rel="noopener noreferrer" hx-boost="false">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
-       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M21 11.5a8.5 8.5 0 0 1-12.2 7.7L3 21l1.9-5.6A8.5 8.5 0 1 1 21 11.5z"/>
-  </svg>
+  <%- icon("message-circle") %>
   Join the Discord
 </a>
 <% end %>

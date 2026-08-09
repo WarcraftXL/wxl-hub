@@ -1,0 +1,28 @@
+<% --[[ What the workspace is pointed at, in the bar, on every page of this shell.
+
+        Short by design. The bar answers "which folder, and should I be nervous"; the card on the
+        overview answers "is it healthy". Putting the checks up here would make the one line nobody
+        may ignore into a paragraph everybody does. ]] %>
+<div class="wtarget" id="worktarget"<% if oob then %> hx-swap-oob="true"<% end %>>
+  <span class="k">Target</span>
+
+  <% if not t.set then %>
+    <span class="unset">none set</span>
+
+  <% else %>
+    <span class="build"><%= t.info.build or "unknown build" %></span>
+    <span class="sep">&middot;</span>
+    <span class="path" title="<%= t.path %>"><%= short(t.path) %></span>
+
+    <% if t.playing then %>
+      <span class="sep">&middot;</span>
+      <% --[[ The only alarm in the shell. It is not saying anything is wrong, it is saying that what
+              is wrong here will be wrong in the client you launch tonight. ]] %>
+      <span class="playing" title="The workspace and your active profile point at the same folder">
+        <%- icon("triangle-alert") %>the client you play
+      </span>
+    <% end %>
+  <% end %>
+
+  <a class="change" href="/workspace">Change</a>
+</div>

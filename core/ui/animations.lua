@@ -1,8 +1,8 @@
 --[[
   Motion.
 
-  Split out of core/theme.lua so the sheet has two halves read for different reasons: what things
-  look like, and what they do when they arrive or when a pointer finds them. core/style.lua joins the
+  Split out of core/ui/theme.lua so the sheet has two halves read for different reasons: what things
+  look like, and what they do when they arrive or when a pointer finds them. core/ui/style.lua joins the
   two strings, and a keyframe declared here is visible to a rule declared there: `@keyframes` are
   global whatever file they were written in.
 

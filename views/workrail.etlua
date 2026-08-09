@@ -1,0 +1,59 @@
+<% --[[ The workspace rail: categories down the left, each one opening in place.
+
+        It is a column of icons until the pointer reaches it, and then it widens and puts a name
+        beside every icon. Clicking a category unfolds its tools underneath, where the rest of the
+        rail stays visible around them. The alternative, a panel flying out beside the icon under the
+        cursor, showed one category at a time and hid the shape of everything else.
+
+        `<details>` rather than a class we would have to toggle: the browser already owns "this is
+        open", the state survives the rail being swapped after a navigation, and `name` makes the set
+        exclusive without a line of script. The category you are inside is open on arrival, which is
+        the only default anyone would have chosen by hand.
+
+        Nothing here is a list this file knows. Categories and tools are collected from whoever
+        contributed them, so a category arrives by a module being present and leaves by it being
+        removed. A category with no tools is not drawn: an empty section is a promise, and the rail
+        is meant to be read at a glance. ]] %>
+<aside class="workrail" id="workrail"<% if oob then %> hx-swap-oob="true"<% end %>>
+  <nav>
+    <a class="wcat one<%= active == "overview" and " on" or "" %>" href="/workspace">
+      <span class="wico"><%- icon("layout-dashboard") %></span>
+      <span class="wlabel">Overview</span>
+    </a>
+
+    <% if #cats > 0 then %><span class="wsep"></span><% end %>
+
+    <% for _, c in ipairs(cats) do %>
+      <details class="wcat<%= c.on and " on" or "" %>" name="wcat"<% if c.on then %> open<% end %>>
+        <summary>
+          <span class="wico"><%- icon(c.icon) %></span>
+          <span class="wlabel"><%= c.name %></span>
+          <span class="wchev"><%- icon("chevron-right") %></span>
+        </summary>
+
+        <div class="wtools">
+          <% if c.blurb then %><span class="wblurb"><%= c.blurb %></span><% end %>
+
+          <% for _, t in ipairs(c.tools) do %>
+            <% if t.path then %>
+              <a class="wtool<%= t.on and " on" or "" %>" href="<%= t.path %>">
+                <span><%= t.name %></span>
+                <% --[[ The tool declared that it writes. Said in the rail as well as on the tool's
+                        own page, because the moment to know is before the click. ]] %>
+                <% if t.writes then %><span class="pen" title="Writes to the target"><%-
+                   icon("pencil") %></span><% end %>
+              </a>
+            <% else %>
+              <% --[[ Deliberately not a link. A page that only says "not built yet" is a click that
+                      cost you your place, and six of them is what this rail replaced. ]] %>
+              <span class="wtool off">
+                <span><%= t.name %></span>
+                <em class="soon">planned</em>
+              </span>
+            <% end %>
+          <% end %>
+        </div>
+      </details>
+    <% end %>
+  </nav>
+</aside>

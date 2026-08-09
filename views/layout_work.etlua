@@ -1,0 +1,59 @@
+<!doctype html>
+<meta charset="utf-8">
+<title><%= title %></title>
+<meta http-equiv="Content-Security-Policy" content="<%= csp %>">
+<link rel="icon" href="/static/logo.png">
+<script src="/vendor/htmx.min.js"></script>
+
+<%- render("pickfolder", {}) %>
+<link rel="stylesheet" href="<%= stylesheet %>">
+
+<% --[[ The workspace shell. Same theme, same components, a different shape: the top bar drops the
+        navigation and carries what is being operated on instead, and the tools live in a rail down
+        the left rather than in a row along the top.
+
+        The shape is allowed to change this much because the way back never does. The mark and the
+        exit are both permanent and both leave through a real navigation, so the consumer half of the
+        app is always one click away and always arrives with its own bar rather than under this one.
+
+        Boosting works inside the workspace the same way it does outside: a tool replaces `#view`,
+        and the rail comes back marked out of band so the highlight follows without the bar being
+        rebuilt. What it must not do is cross the boundary, which is why the two links out of here
+        say so. ]] %>
+<body class="work" hx-boost="true">
+
+<header class="worktop">
+  <a class="brand" href="/" hx-boost="false">
+    <img src="/static/logo.png" alt="">
+    <span>Warcraft<em>XL</em></span>
+  </a>
+
+  <% --[[ Not decoration. Every tool in this shell acts on whatever this strip names, so it is the one
+          thing that may never scroll out of sight. ]] %>
+  <%- chrome.target %>
+
+  <span class="spacer"></span>
+
+  <% --[[ Kept from the consumer bar, because the workspace is where long jobs are started and the
+          tray is where the ones that finished while you were elsewhere are waiting. ]] %>
+  <%- render("core:trayicons", { unread = unread, queued = queued, active = active }) %>
+
+  <a class="btn leave" href="/" hx-boost="false">Leave workspace</a>
+</header>
+
+<div id="toasts" aria-live="polite"><%- toasts or "" %></div>
+
+<%- chrome.rail %>
+
+<div id="view"><%- body %></div>
+
+<%- render("shellscript", {}) %>
+
+<footer>
+  <span class="figs">
+    <span><b><%= stats.modules %></b> module<%= tonumber(stats.modules) == 1 and "" or "s" %></span>
+    <span><b><%= stats.authors %></b> author<%= tonumber(stats.authors) == 1 and "" or "s" %></span>
+    <span>catalogue <b><%= cache_age %></b></span>
+  </span>
+  <span class="note">Read from GitHub. A repository is listed once it publishes a wxl.json.</span>
+</footer>

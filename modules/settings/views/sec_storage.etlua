@@ -28,7 +28,7 @@
     <label>Past its lifetime</label>
     <div class="val">
       <% if cache.expired == 0 then %>
-        <span class="ok">&#10003;</span><span class="note">nothing, everything here is current</span>
+        <span class="ok"><%- icon("check") %></span><span class="note">nothing, everything here is current</span>
       <% else %>
         <span class="warn"><%= cache.expired %></span>
         <span class="note">of <%= cache.entries %>, kept so the hub still opens without a network</span>

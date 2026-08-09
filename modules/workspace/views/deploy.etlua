@@ -1,0 +1,37 @@
+<div class="page">
+  <header class="wtitle">
+    <h1>Deploy framework</h1>
+    <p>Fetches the newest wxl-core release, writes the library and the patcher next to Wow.exe, and
+      runs the patcher. This is the same thing the first-run form does, offered on its own so a client
+      can be brought up to date without going through it again.</p>
+  </header>
+
+  <section>
+    <div class="panel wdeploy">
+      <%- render("deploy_state", { t = t }) %>
+
+      <% if t.playing then %>
+        <span class="alarm"><%- icon("triangle-alert") %>This is the client your active profile
+          launches. Wow.exe will be rewritten, with the original kept beside it as
+          <code>Wow.exe.orig</code>.</span>
+      <% end %>
+
+      <div class="acts">
+        <% --[[ The patcher decides whether it has already run and skips a client it has done, so
+                there is one button and not two. Offering "repair" beside "install" would be this
+                page holding a second opinion about a question the patcher already answers. ]] %>
+        <button class="btn primary" <% if not t.set then %>disabled<% end %>
+                hx-post="/workspace/client/deploy" hx-target="#wjob" hx-swap="innerHTML">
+          <%= t.set and (t.info.patched and t.info.core.present
+                         and "Update the framework" or "Set up this client")
+                     or "No client set" %>
+        </button>
+        <span class="note">Wow.exe is kept as <code>Wow.exe.orig</code> before it is touched.</span>
+      </div>
+
+      <% --[[ A bare slot. What lands here is a `.job` itself, and giving the container the class too
+              stacks two sets of the same spacing, one of which draws nothing. ]] %>
+      <div id="wjob"></div>
+    </div>
+  </section>
+</div>

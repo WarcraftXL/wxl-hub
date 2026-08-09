@@ -3,11 +3,14 @@ deps/luvi/
 deps/webview/
 deps/sqlite/
 
-# Local state. hub.db holds this machine's profiles and client paths.
+# Local state. hub.db holds this machine's profiles and client paths, `window` the size and position
+# it was left at. A run from the repository writes both beside the sources, because there is no
+# install folder to put them in.
 *.db
 *.db-wal
 *.db-shm
 *.log
+/window
 
 # Build output
 build/

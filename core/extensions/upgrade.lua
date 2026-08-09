@@ -9,9 +9,9 @@
   installable, which is checked when the job starts and not assumed here.
 ]]
 
-local db       = require("core.db")
-local manifest = require("core.manifest")
-local mediator = require("core.mediator")
+local db       = require("core.base.db")
+local manifest = require("core.extensions.manifest")
+local mediator = require("core.base.mediator")
 
 local M = {}
 

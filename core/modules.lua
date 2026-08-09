@@ -13,9 +13,9 @@
 ]]
 
 local uv       = require("uv")
-local migrate  = require("core.migrate")
-local view     = require("core.view")
-local mediator = require("core.mediator")
+local migrate  = require("core.base.migrate")
+local view     = require("core.base.view")
+local mediator = require("core.base.mediator")
 
 local M = { loaded = {}, failed = {} }
 
@@ -132,6 +132,10 @@ function M.nav(active, dev, online)
         href  = m.nav.href or m.mount or ("/" .. m.id),
         on    = (active == m.id),
         id    = m.id,
+        -- A module that replaces the shell rather than filling it. Boosting only swaps `#view`, so a
+        -- link into one would leave the bar of the shell being left behind sitting above the new
+        -- page. Declared by the module because core cannot tell from a mount point.
+        boundary = m.nav.boundary or false,
       }
     end
   end

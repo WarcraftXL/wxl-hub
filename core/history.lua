@@ -2,13 +2,16 @@
   What the user last opened.
 
   It lives in core rather than in a module because it spans them: the store records a listing, the
-  tools page records a tool, and the home page shows both. A module writes to it through `record`
+  workspace will record a tool, and the home page shows both. A module writes to it through `record`
   and never reads another module's rows directly.
+
+  `icon` holds a name from core/ui/icons.lua, never markup. A row is data that outlives the build
+  that wrote it, and a stored `<svg>` would still be the old drawing after the set is restyled.
 
   Backed by SQLite, so the list survives a restart, which is the only reason it is worth having.
 ]]
 
-local db = require("core.db")
+local db = require("core.base.db")
 
 local M = {}
 

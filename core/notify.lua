@@ -9,7 +9,7 @@
   install is one problem, and a bell that counts them is a bell people stop reading.
 ]]
 
-local db = require("core.db")
+local db = require("core.base.db")
 
 local M = {}
 

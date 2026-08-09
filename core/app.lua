@@ -42,23 +42,23 @@ end
 -- migrations ran, for one.
 function M.serve(port, token, opts)
   opts = opts or {}
-  local db      = require("core.db")
-  local migrate = require("core.migrate")
-  local cache   = require("core.cache")
-  local server  = require("core.server")
+  local db      = require("core.base.db")
+  local migrate = require("core.base.migrate")
+  local cache   = require("core.base.cache")
+  local server  = require("core.base.server")
   local modules = require("core.modules")
   local history = require("core.history")
-  local page    = require("core.page")
-  local view    = require("core.view")
-  local boot    = require("core.boot")
-  local flavour = require("core.flavour")
-  local style   = require("core.style")
-  local tools    = require("core.tools")
+  local page    = require("core.ui.page")
+  local view    = require("core.base.view")
+  local boot    = require("core.extensions.boot")
+  local flavour = require("core.game.flavour")
+  local style   = require("core.ui.style")
+  local tools    = require("core.game.tools")
   local jobs     = require("core.jobs")
   local notify   = require("core.notify")
-  local launch   = require("core.launch")
-  local mediator = require("core.mediator")
-  require("core.helpers").install()
+  local launch   = require("core.game.launch")
+  local mediator = require("core.base.mediator")
+  require("core.ui.helpers").install()
 
   -- Not "hub.db". The working directory is a per-build cache folder, so a relative name would give
   -- every build its own database and hand the user an empty hub after every update.
@@ -78,7 +78,7 @@ function M.serve(port, token, opts)
 
   -- Artwork for the band each working page opens with. A bare URL is the common case; the table form
   -- exists for a picture whose subject sits on the side the title needs, which the scrim would
-  -- otherwise cover. Every host here has to be in the img-src list in core/page.lua.
+  -- otherwise cover. Every host here has to be in the img-src list in core/ui/page.lua.
   page.config.images = {
     library = {
       src  = "https://bnetcmsus-a.akamaihd.net/cms/blog_header/3h/3HY9H7J7HMX21761349941189.png",
@@ -91,7 +91,9 @@ function M.serve(port, token, opts)
       "https://bnetcmsus-a.akamaihd.net/cms/blog_header/zq/ZQIXYN40KUPU1764984459732.png",
   }
 
-  local available = tools.detect { "python", "git" }
+  -- Python is gone from this list on purpose: the pipeline is being rewritten in Lua, so nothing the
+  -- hub drives will ask for an interpreter the user had to install first.
+  local available = tools.detect { "git" }
 
   print("boot:")
   boot.start()
@@ -186,7 +188,7 @@ function M.serve(port, token, opts)
   end
 
   -- The stylesheet, at a URL carrying its own digest. Cached hard because a changed sheet is a
-  -- changed URL; see core/style.lua.
+  -- changed URL; see core/ui/style.lua.
   app.router:get("/theme.css", function(req, res)
     res:header("Cache-Control", style.cache_control)
     res:send(200, style.mime, style.css)
@@ -308,7 +310,7 @@ function M.run()
     uv2.chdir(cwd)
     package.path = "./?.lua;./?/init.lua;" .. package.path
 
-    require("core.log").install(require("core.release").log(), "server")
+    require("core.base.log").install(require("core.release").log(), "server")
 
     local ok, err = xpcall(function()
       require("core.app").serve(port, token)
@@ -331,7 +333,7 @@ function M.run()
   -- Back where it was left, if it was ever left anywhere. Applied while the window is still hidden,
   -- so nobody watches it jump from the middle of the screen to its corner. The size above is only
   -- the first launch's answer.
-  local geometry = require("core.geometry")
+  local geometry = require("core.ui.geometry")
   local remembered = geometry.read()
   if remembered then
     win:place(remembered)
@@ -412,7 +414,7 @@ addEventListener('DOMContentLoaded', function () {
   win:hide()
 
   -- And only now is there something at the other end to navigate to.
-  if not require("core.server").wait(port) then
+  if not require("core.base.server").wait(port) then
     print("the server did not come up in time, showing whatever the browser makes of that")
   end
 

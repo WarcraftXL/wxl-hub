@@ -1,0 +1,34 @@
+<% --[[ The tools you keep, and one card that is always the way to add another.
+
+        The plus is a card rather than a button in the section header because it is the only control
+        here on a page that can legitimately be empty, and a header action on an empty grid is a
+        thing to hunt for. It swaps this whole block for the picker and the picker swaps it back, so
+        the two share the id and neither has to know where on the page it sits.
+
+        The card is a div with a stretched link inside it rather than an anchor around everything: the
+        remove button has to sit on top of the surface that navigates, and a button inside an anchor
+        is not markup a browser is obliged to make sense of. ]] %>
+<div class="wfav" id="wfav">
+  <% for _, t in ipairs(cards) do %>
+    <div class="favcard panel">
+      <a class="go" href="<%= t.path %>" aria-label="<%= t.name %>"></a>
+      <span class="ico"><%- icon(t.icon) %></span>
+      <span class="t">
+        <b><%= t.name %></b>
+        <span><%= t.category %></span>
+      </span>
+      <% if t.writes then %>
+        <span class="pen" title="Writes to the target"><%- icon("pencil") %></span>
+      <% end %>
+      <button class="drop" title="Remove from your tools"
+              hx-post="/workspace/favourites/<%= t.id %>/remove"
+              hx-target="#wfav" hx-swap="outerHTML"><%- icon("x") %></button>
+    </div>
+  <% end %>
+
+  <button class="favcard add" hx-get="/workspace/favourites/pick"
+          hx-target="#wfav" hx-swap="outerHTML">
+    <span class="plus">+</span>
+    <span class="lbl"><%= #cards == 0 and "Pick your first tool" or "Add a tool" %></span>
+  </button>
+</div>

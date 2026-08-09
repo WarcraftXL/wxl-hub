@@ -8,11 +8,7 @@
 
   <details class="bell">
     <summary title="Notifications">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
-        <path d="M13.7 21a2 2 0 0 1-3.4 0"/>
-      </svg>
+      <%- icon("bell") %>
       <%- render("core:traypip", { id = "bellpip", n = unread }) %>
     </summary>
     <div class="traypanel" hx-get="/notifications/panel"
@@ -22,10 +18,7 @@
   </details>
 
   <a class="dl <%= active == 'downloads' and 'on' or '' %>" href="/downloads" title="Downloads">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M4 21h16"/>
-    </svg>
+    <%- icon("download") %>
     <%- render("core:traypip", { id = "dlpip", n = queued }) %>
   </a>
 

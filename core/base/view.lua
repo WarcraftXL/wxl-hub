@@ -2,7 +2,7 @@
   etlua views, scoped per module.
 
   `<%= %>` escapes, `<%- %>` does not. Author input goes through `<%= %>` or through
-  core/markdown.lua; `<%- %>` is only ever for HTML this codebase produced itself. Getting the two
+  core/base/markdown.lua; `<%- %>` is only ever for HTML this codebase produced itself. Getting the two
   backwards fails silently, which is why it is stated here rather than assumed.
 
   Name resolution, from a module's renderer:

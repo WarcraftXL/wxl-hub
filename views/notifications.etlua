@@ -29,7 +29,7 @@
       <% end %>
       <span class="when"><%= ago(n.created_at) %></span>
       <a class="x" title="Dismiss" hx-post="/notifications/<%= n.id %>/dismiss"
-         hx-target="closest .traypanel" hx-swap="innerHTML">&#10005;</a>
+         hx-target="closest .traypanel" hx-swap="innerHTML"><%- icon("x") %></a>
     </div>
   <% end %>
 <% end %>

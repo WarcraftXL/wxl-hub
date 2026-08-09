@@ -85,7 +85,7 @@ if bundled then
   -- Beside the version folders, not inside one. The launcher and the application it starts are two
   -- processes running two different builds out of two different folders, and a log per folder is two
   -- halves of one story filed separately.
-  local log = require("core.log")
+  local log = require("core.base.log")
   log.install(hub .. "/hub.log", "main")
   log.banner(("wxl-hub %s  %s  %s")
              :format(require("core.release").version, version(), os.date("%Y-%m-%d %H:%M:%S")))
@@ -95,7 +95,7 @@ end
 -- it can change while the app runs. Saying so lets core.view skip even the stat it would otherwise
 -- do to check. Running from a directory leaves it off, which is what makes editing a .etlua and
 -- refreshing the window the whole development loop.
-if bundled then require("core.view").cache = true end
+if bundled then require("core.base.view").cache = true end
 
 -- One binary, two roles, told apart by where it is running from.
 --

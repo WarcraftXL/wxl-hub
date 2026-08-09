@@ -1,5 +1,5 @@
 -- Template helpers, registered once on core.view and available in every template.
-local view = require("core.view")
+local view = require("core.base.view")
 
 local M = {}
 
@@ -18,9 +18,15 @@ function M.install()
   -- Normalised here so the config can stay a bare URL in the common case and only grow a table when
   -- a picture actually needs mirroring.
   view.helper("pageimage", function(id)
-    local v = require("core.page").config.images[id]
+    local v = require("core.ui.page").config.images[id]
     if type(v) == "string" then return { src = v } end
     return v
+  end)
+
+  -- An icon by its Lucide name. A helper because a template asking for one should not have to know
+  -- where the set lives, and because the name is all a module ever declares.
+  view.helper("icon", function(name, class)
+    return require("core.ui.icons").svg(name, class)
   end)
 
   -- A stable colour per id, so a card keeps its identity across sorts, filters and restarts.

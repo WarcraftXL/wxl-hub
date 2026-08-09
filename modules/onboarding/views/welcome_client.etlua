@@ -18,10 +18,10 @@
     <% end %>
 
   <% else %>
-    <span class="ok">&#10003; 3.3.5a client<% if client.build then %>, build <%= client.build %><% end %></span>
+    <span class="ok"><%- icon("check") %>3.3.5a client<% if client.build then %>, build <%= client.build %><% end %></span>
 
     <% if client.patched and client.core.present then %>
-      <span class="ok">&#10003; Ready for modules, WarcraftXL <%= client.core.version or "installed" %></span>
+      <span class="ok"><%- icon("check") %>Ready for modules, WarcraftXL <%= client.core.version or "installed" %></span>
     <% else %>
       <% --[[ The two halves fail on their own and are fixed differently, so they are said
               separately rather than folded into one "not ready". ]] %>

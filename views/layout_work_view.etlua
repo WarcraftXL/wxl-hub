@@ -1,0 +1,13 @@
+<% --[[ What a navigation inside the workspace gets back: the tool that changed, and the two pieces of
+        this shell that depend on which tool it is.
+
+        Both already carry `hx-swap-oob` when they are built, because whoever builds them is told
+        whether the document is on screen. Rendering them here a second way would be two spellings of
+        the same markup, and the one that rots is the one on the path nobody reloads. ]] %>
+<title><%= title %></title>
+
+<div id="view"><%- body %></div>
+
+<%- chrome.rail %>
+<%- chrome.target %>
+<div id="toasts" aria-live="polite" hx-swap-oob="true"><%- toasts or "" %></div>
