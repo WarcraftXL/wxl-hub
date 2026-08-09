@@ -82,13 +82,30 @@
       </div>
     </div>
 
+    <% --[[ Two different nothings, and they deserve different answers. A search that found nothing is
+            a state you put yourself in and can leave in one click, so it says how. A catalogue with
+            nothing in it is nobody's mistake, and it is the one moment where saying how a module gets
+            here might actually produce one. ]] %>
     <% if #results == 0 and (f.cat or f.author or f.src or (f.q or "") ~= "") then %>
-      <p class="noresult">Nothing matches those filters.</p>
+      <div class="empty bare">
+        <b>Nothing matches those filters</b>
+        <span>Loosen one of them, or search for something else.</span>
+        <a class="btn primary" href="/store" style="margin-top:1rem">Clear the filters</a>
+      </div>
+
     <% elseif #results == 0 then %>
-      <p class="noresult">
-        No tagged repository publishes a <code>wxl.json</code> yet.<br>
-        Commit one at the root of yours and it shows up here on the next launch.
-      </p>
+      <div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+        </svg>
+        <b>No module has been published yet</b>
+        <span>A repository tagged <code>wxl-modules</code> shows up here as soon as it carries a
+          <code>wxl.json</code> at its root. There is nothing to submit and no account to
+          create.</span>
+      </div>
+
     <% else %>
       <div class="results">
         <% for _, mod in ipairs(results) do %>

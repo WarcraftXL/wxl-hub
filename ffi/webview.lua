@@ -68,6 +68,28 @@ ffi.cdef [[
 void *CreateSolidBrush(unsigned long color);
 ]]
 
+-- Window placement, for remembering where the window was.
+--
+-- GetWindowPlacement rather than GetWindowRect, and the difference matters: a maximised window's
+-- rect is the whole screen, so saving that as the size would mean never getting a small window back.
+-- The placement keeps the restored rectangle and the maximised state as two separate facts, which is
+-- exactly the two facts worth storing.
+ffi.cdef [[
+typedef struct { long left, top, right, bottom; } WXL_RECT;
+typedef struct { long x, y; } WXL_POINT;
+typedef struct {
+  unsigned int length;
+  unsigned int flags;
+  unsigned int showCmd;
+  WXL_POINT ptMinPosition;
+  WXL_POINT ptMaxPosition;
+  WXL_RECT   rcNormalPosition;
+} WXL_WINDOWPLACEMENT;
+
+int GetWindowPlacement(void *hWnd, WXL_WINDOWPLACEMENT *lpwndpl);
+int SetWindowPlacement(void *hWnd, const WXL_WINDOWPLACEMENT *lpwndpl);
+]]
+
 local M = {}
 
 local C          -- the loaded library, set by M.setup
@@ -156,6 +178,15 @@ function M.open(opts)
     _callbacks = {},
   }, Window)
 
+  -- First, and deliberately before the title and the size.
+  --
+  -- `webview_create` makes the window visible. Nothing paints it yet, because painting needs the
+  -- message loop and that does not start until `run`, but the gap is the only place a white frame
+  -- can come from and every call made in it widens the gap. Hiding here rather than in the caller is
+  -- the difference between "hidden before the loop starts" and "hidden a few statements later".
+  if opts.hidden then self:hide() end
+  if opts.background then self:background(opts.background[1], opts.background[2], opts.background[3]) end
+
   if opts.title then self:title(opts.title) end
   if opts.width then self:size(opts.width, opts.height or 600, opts.hint) end
   return self
@@ -232,8 +263,54 @@ end
 -- `webview_create` makes the window **and** shows it, while the first document is a round trip away
 -- on another thread. Nothing can paint that gap: an empty frame is empty whatever colour it is, so
 -- the only way not to show it is not to show the window.
+--
+-- Showing honours a remembered maximised state, because the placement was applied while the window
+-- was hidden and a hidden window cannot be maximised: SW_SHOW would put a full-screen window back at
+-- its restored size.
 function Window:hide() return self:_show(0) end   -- SW_HIDE
-function Window:show() return self:_show(5) end   -- SW_SHOW
+function Window:show() return self:_show(self._maximised and 3 or 5) end   -- SW_SHOWMAXIMIZED / SW_SHOW
+
+--- Where the window is, as something that can be written down and handed back later.
+--
+-- Returns nil while the native handle does not exist yet, which is the case for a moment after
+-- creation.
+function Window:placement()
+  local hwnd = self:hwnd()
+  if hwnd == nil then return nil end
+
+  local wp = ffi.new("WXL_WINDOWPLACEMENT")
+  wp.length = ffi.sizeof("WXL_WINDOWPLACEMENT")
+  if user32.GetWindowPlacement(hwnd, wp) == 0 then return nil end
+
+  local r = wp.rcNormalPosition
+  return {
+    x = r.left, y = r.top,
+    w = r.right - r.left, h = r.bottom - r.top,
+    maximised = wp.showCmd == 3,        -- SW_SHOWMAXIMIZED
+  }
+end
+
+--- Put the window back where it was.
+--
+-- Applied with SW_HIDE so it only moves the window: the placement carries a show command, and
+-- letting it through here would put the window on screen in the middle of the startup we spend
+-- keeping it off. The maximised half is remembered for `show` to act on instead.
+function Window:place(g)
+  local hwnd = self:hwnd()
+  if hwnd == nil or not g then return self end
+
+  local wp = ffi.new("WXL_WINDOWPLACEMENT")
+  wp.length = ffi.sizeof("WXL_WINDOWPLACEMENT")
+  wp.showCmd = 0                        -- SW_HIDE
+  wp.rcNormalPosition.left   = g.x
+  wp.rcNormalPosition.top    = g.y
+  wp.rcNormalPosition.right  = g.x + g.w
+  wp.rcNormalPosition.bottom = g.y + g.h
+  user32.SetWindowPlacement(hwnd, wp)
+
+  self._maximised = g.maximised and true or false
+  return self
+end
 
 function Window:_show(cmd)
   local hwnd = self:hwnd()

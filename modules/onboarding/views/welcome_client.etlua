@@ -1,0 +1,42 @@
+<% --[[ What is worth saying, not everything that was checked.
+
+        While a folder is being chosen, a passing check is noise: the reader wants to know whether
+        this is the right folder and, once it is, whether the framework is in it. So a bad client
+        shows only what is wrong with it, and a good one shows one line saying so.
+
+        The framework is the exception because it is the only thing about a valid client that anyone
+        can still be asked to do something about. ]] %>
+<div id="wverdict" class="wverdict">
+  <% if client.path == "" then %>
+    <span class="note">Not set yet. Browse to the folder holding Wow.exe.</span>
+
+  <% elseif not client.ok then %>
+    <% for _, c in ipairs(client.checks) do %>
+      <% if c.state ~= "ok" then %>
+        <span class="<%= c.state %>"><%= c.label %><% if c.detail then %>: <%= c.detail %><% end %></span>
+      <% end %>
+    <% end %>
+
+  <% else %>
+    <span class="ok">&#10003; 3.3.5a client<% if client.build then %>, build <%= client.build %><% end %></span>
+
+    <% if client.patched and client.core.present then %>
+      <span class="ok">&#10003; Ready for modules, WarcraftXL <%= client.core.version or "installed" %></span>
+    <% else %>
+      <% --[[ The two halves fail on their own and are fixed differently, so they are said
+              separately rather than folded into one "not ready". ]] %>
+      <% if not client.patched then %>
+        <span class="warn">Wow.exe has not been patched, so the framework never loads</span>
+      <% end %>
+      <% if not client.core.present then %>
+        <span class="warn">WarcraftXL.dll is not in this folder</span>
+      <% end %>
+      <button class="wfix" hx-post="/welcome/patch" hx-target="#wjob" hx-swap="innerHTML">
+        Set up this client
+      </button>
+      <% --[[ A bare slot. The fragment that lands here is a `.job` itself, and giving the container
+              the class too stacks two sets of the same spacing, one of which draws nothing. ]] %>
+      <div id="wjob"></div>
+    <% end %>
+  <% end %>
+</div>

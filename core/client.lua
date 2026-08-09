@@ -115,10 +115,22 @@ function M.inspect(path)
     r.ok = false
   end
 
+  -- Whether the client itself has been prepared, read from the mark the patcher leaves and checks
+  -- for. Two things have to be true before anything installed here loads, and they fail
+  -- independently: the import has to be in the image, and the library it names has to be on disk.
+  r.patched = require("utils.pe").has_section(exe, ".wxl")
+  check("Wow.exe patched", r.patched and "ok" or "warn",
+        r.patched and "the WarcraftXL section is present"
+                   or "no WarcraftXL section, the client will start without it")
+
   local dll = path .. "/WarcraftXL.dll"
-  check("WarcraftXL.dll", is_file(dll) and "ok" or "warn",
-        is_file(dll) and (winver.file_version_string(dll) or "present")
-                      or "not deployed, extensions will not load")
+  -- Lifted out of the list as well as left in it. Everything else here describes whether this is
+  -- the right folder; this one describes whether the framework is in it, which is the only thing
+  -- about a valid client anyone can still be asked to fix.
+  r.core = { present = is_file(dll), version = is_file(dll) and winver.file_version_string(dll) }
+  check("WarcraftXL.dll", r.core.present and "ok" or "warn",
+        r.core.present and (r.core.version or "present")
+                        or "not deployed, extensions will not load")
 
   return r
 end

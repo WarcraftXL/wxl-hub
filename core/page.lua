@@ -138,6 +138,19 @@ function M.queue(level, title, text)
   waiting[#waiting + 1] = { level = level, title = title, text = text }
 end
 
+--- Whether the request being answered is a navigation from inside the app.
+--
+-- Held here rather than threaded through every handler's call to `render`, which would mean every
+-- module passing a request object it otherwise has no use for. Safe as a single value because one
+-- request is handled at a time on this thread: the socket's read callback parses, routes and answers
+-- without ever yielding, so there is no second request in flight to confuse it with.
+local boosted = false
+
+--- Called by the shell for every request, before anything is routed.
+function M.begin(req)
+  boosted = (req and req.boosted) or false
+end
+
 --- Render a full page around `body`.
 --
 -- opts: title, active (module id), untrusted (bool), cache_age
@@ -154,7 +167,10 @@ function M.render(body, opts)
   for i = 1, #waiting do toasts[i] = view.render("toast", waiting[i]) end
   waiting = {}
 
-  return view.render("layout", {
+  -- A navigation from inside the app already has the shell on screen, so it is answered with the
+  -- part that changes and the two pieces of shell that depend on which page it is. Same data either
+  -- way: only how much of it is written out differs.
+  return view.render(boosted and "layout_view" or "layout", {
     toasts     = table.concat(toasts),
     -- Suffixed here so no caller has to remember to. A tab reading only "Store" says nothing once
     -- the window is one of a dozen.

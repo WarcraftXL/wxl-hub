@@ -17,16 +17,11 @@ local news  = require("core.news")
 
 local TOPIC     = "wxl-modules"
 local CORE_REPO = "WarcraftXL/wxl-core"
-local HUB_REPO  = "WarcraftXL/wxl-hub"
-
--- The release asset an update is made of. The executable published beside it is deliberately not
--- what this looks for: it is downloaded by hand, once, and never by the application.
-local PAYLOAD_ASSET = "^wxl%-hub%-payload.*%.zip$"
 
 -- The shape of the payload is part of the key. A cached copy written by an older build decodes
 -- without error and then quietly comes up short, which reads as "nobody published anything" rather
 -- than as a stale cache. Bump this whenever `job` changes what it returns.
-local KEY = "boot.3"
+local KEY = "boot.4"
 
 local M = {
   state   = "loading",   -- loading | ready | offline
@@ -39,10 +34,6 @@ local M = {
   repos    = nil,
   listings = nil,
   age      = nil,
-
-  -- The newest hub release carrying a payload: { version, url, size, notes }. core.update decides
-  -- whether it is worth offering; this only reports what was published.
-  hub      = nil,
 
   started  = 0,
   KEY      = KEY,
@@ -63,7 +54,7 @@ local function step(s)
 end
 
 -- Runs in a threadpool Lua state: no upvalues, no shared globals, primitives in and out.
-local function job(topic, core_repo, hub_repo, progress_path)
+local function job(topic, core_repo, progress_path)
   package.path = "./?.lua;./?/init.lua;" .. package.path
   local http     = require("ffi.winhttp")
   local json     = require("deps.lua.json")
@@ -73,9 +64,9 @@ local function job(topic, core_repo, hub_repo, progress_path)
 
   local out = { steps = {}, listings = {} }
 
-  -- Two audiences. `steps` is the log, handed back at the end and printed for whoever is reading
-  -- the console. The file is for the splash, which needs to know what is happening *now* and cannot
-  -- wait for the work to finish to be told.
+  -- Two audiences. `steps` is the log, handed back at the end. The file is for the splash, which
+  -- needs to know what is happening *now* and cannot wait for the work to finish to be told.
+  --
   -- Three lines: what is happening, and how far through it is when that is actually known. Zero for
   -- the total means unknown, which the splash draws as a sweep rather than as a number it invented.
   local function say(text, done, total)
@@ -133,15 +124,6 @@ local function job(topic, core_repo, hub_repo, progress_path)
     local c = http.get(RAW .. core_repo .. "/main/wxl.json")
     note("wxl-core/wxl.json " .. c.status)
     out.core = c.status == 200 and c.body or nil
-
-    -- Rides along here rather than in a check of its own. The one fetch the hub already makes at
-    -- startup is the cheapest place to learn there is a newer version, and it means the answer is
-    -- cached and aged on exactly the same terms as everything else on screen.
-    say("Looking for a newer hub")
-    local h = http.get("https://api.github.com/repos/" .. hub_repo .. "/releases?per_page=10",
-                       { headers = { "User-Agent: wxl-hub", "Accept: application/vnd.github+json" } })
-    note("hub releases " .. h.status)
-    out.hub = h.status == 200 and h.body or nil
   end)
 
   if not ok then out.error = tostring(err) end
@@ -166,31 +148,6 @@ local function repo_list(body)
     }
   end
   return out
-end
-
---- The newest published release that carries a payload, as the updater wants it.
---
--- Only the newest is considered. A release list is not a menu: if the most recent one publishes no
--- payload, the answer is that there is nothing to install, not that an older one will do.
-local function hub_release(body)
-  local ok, doc = pcall(json.decode, body)
-  if not ok or type(doc) ~= "table" then return nil end
-  for _, rel in ipairs(doc) do
-    if not rel.draft and not rel.prerelease then
-      for _, asset in ipairs(rel.assets or {}) do
-        if type(asset.name) == "string" and asset.name:match(PAYLOAD_ASSET) then
-          return {
-            version = (tostring(rel.tag_name or ""):gsub("^v", "")),
-            url     = asset.browser_download_url,
-            size    = asset.size or 0,
-            notes   = rel.html_url,
-          }
-        end
-      end
-      return nil
-    end
-  end
-  return nil
 end
 
 local function adopt(payload_json, from_cache)
@@ -220,11 +177,6 @@ local function adopt(payload_json, from_cache)
     local took, why = news.set(out.core)
     step(took and ("core manifest: " .. why .. " news item(s)")
               or ("core manifest ignored: " .. tostring(why)))
-  end
-
-  if out.hub then
-    M.hub = hub_release(out.hub)
-    if M.hub then step("hub release " .. M.hub.version) end
   end
 
   -- Reaching the topic search at all proves there is a network, even in the case where nobody
@@ -308,7 +260,7 @@ function M.refresh()
     adopt(payload, false)
     M.age, M.source = 0, "network"
   end)
-  uv.queue_work(work, TOPIC, CORE_REPO, HUB_REPO, PROGRESS)
+  uv.queue_work(work, TOPIC, CORE_REPO, PROGRESS)
   return true
 end
 
@@ -354,7 +306,7 @@ function M.start(ttl)
 
     os.remove(PROGRESS)
   end)
-  uv.queue_work(work, TOPIC, CORE_REPO, HUB_REPO, PROGRESS)
+  uv.queue_work(work, TOPIC, CORE_REPO, PROGRESS)
 end
 
 return M

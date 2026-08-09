@@ -1,0 +1,18 @@
+<% --[[ What a navigation gets back: the part of the document that changed, and nothing else.
+
+        The shell is already on screen, so sending it again would mean rebuilding a bar that is
+        correct, throwing away its blur surface and replaying its entrance on every click. That is
+        exactly what made the hub feel like a site rather than an application.
+
+        Only two things about the shell depend on the page. Both come back marked out of band, which
+        is the same mechanism the tray counters and the toasts already use: htmx lifts them out of
+        the response and puts them where their id already is, then swaps what is left into `#view`.
+
+        The title is a plain element on purpose. htmx reads it out of the fragment and puts it on the
+        document, so the window keeps naming the page you are actually on. ]] %>
+<title><%= title %></title>
+
+<div id="view"><%- body %></div>
+
+<%- render("nav", { nav = nav, oob = true }) %>
+<div id="toasts" aria-live="polite" hx-swap-oob="true"><%- toasts or "" %></div>

@@ -35,6 +35,16 @@ return function(router, mod, ctx)
     return p and p.name or nil
   end)
 
+  --- Rename the profile in use. Answers with the problem, or nil when there was none: `ask` carries
+  --- one value back, and the half worth carrying is the half that says why it did not work.
+  ---
+  --- No id in the signature, on purpose. A caller outside this module has one profile in mind, the
+  --- one every scoped value it reads already belongs to.
+  mediator.provide("profile.rename", function(name)
+    local _, why = profiles.rename(profiles.active().id, name)
+    return why
+  end)
+
   -- ------------------------------------------------------------- the section ---
   local function data(problem)
     return {
@@ -96,23 +106,28 @@ return function(router, mod, ctx)
   -- down would make the next launch skip the question it was told to ask.
   local chosen = false
 
-  --- Core asks every module whether it needs an answer before the app opens. It never learns what
-  --- the question is, or that profiles are the ones asking.
-  mediator.provide("startup.gate", function(path)
-    if chosen or path:find("^/profiles/use/") then return nil end
-    if not profiles.bool("ask_profile") then return nil end
+  --- One of the questions core asks before opening the app. It never learns what this one is, only
+  --- that it exists and which paths belong to it.
+  mediator.contribute("startup.question", {
+    id = "which-profile", order = 20,
+    owns = "/profiles/use/",
 
-    local list = profiles.profiles()
-    if #list < 2 then return nil end            -- one profile is not a choice
+    render = function()
+      if chosen then return nil end
+      if not profiles.bool("ask_profile") then return nil end
 
-    local active = profiles.active()
-    return view.render("chooseprofile", {
-      stylesheet = style.href,
-      csp        = page.CSP_PLAIN,
-      profiles   = list,
-      active     = active and active.id or nil,
-    })
-  end)
+      local list = profiles.profiles()
+      if #list < 2 then return nil end          -- one profile is not a choice
+
+      local active = profiles.active()
+      return view.render("chooseprofile", {
+        stylesheet = style.href,
+        csp        = page.CSP_PLAIN,
+        profiles   = list,
+        active     = active and active.id or nil,
+      })
+    end,
+  })
 
   router:post("/profiles/use/:id", function(req, res)
     chosen = true

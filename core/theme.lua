@@ -35,8 +35,13 @@ return [[
 }
 
 * { box-sizing: border-box }
-html { background: var(--bg) }
-body { margin: 0; padding-top: 84px; background: var(--bg); color: var(--text);
+/* The scrollbar is inherited, so saying it once here covers every box in the app that ever grows one.
+   Chromium's default is a pale track that sits inside a dark window like a strip cut out of another
+   program, and it was the last surface here nobody had chosen. */
+html { background: var(--bg); scrollbar-width: thin; scrollbar-color: #2b303a transparent }
+/* The two paddings are the room the fixed bars occupy: the floating one at the top, the status bar
+   at the bottom. Without them the first heading sits under the bar and the last line hides behind it. */
+body { margin: 0; padding-top: 84px; padding-bottom: 40px; background: var(--bg); color: var(--text);
   font: 15px/1.6 var(--ui); -webkit-font-smoothing: antialiased }
 a { color: inherit; text-decoration: none }
 img { display: block }
@@ -145,20 +150,18 @@ img { display: block }
 .toast .t span { display: block; color: var(--dimmer); font-size: .81rem; margin-top: .12rem;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 
-@keyframes toastin   { from { opacity: 0; transform: translateX(18px) scale(.97) } }
-@keyframes toastdrain { to { transform: scaleX(0) } }
-@keyframes toastout {
-  to { opacity: 0; transform: translateX(18px);
-       max-height: 0; padding-top: 0; padding-bottom: 0; margin-top: -.55rem; border-width: 0 }
-}
 .profile { display: flex; align-items: center; gap: .5rem; font-size: .88rem; color: var(--dim);
   padding: .4rem .8rem; border-radius: 7px }
 .profile:hover { color: var(--text); background: rgba(255,255,255,.05) }
 .profile.on { color: var(--text); background: rgba(255,255,255,.07) }
 .profile .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green) }
+/* The reason the window is open, and it used to weigh exactly as much as the profile chip beside it.
+   That made the bar read as five equal controls rather than as one action and four ways to get
+   somewhere. Taller, wider, and lit from under: it is the only thing here that starts the game. */
 .play {
-  padding: .45rem 1.25rem; border: 0; border-radius: 8px;
-  background: var(--gold); color: #1b1405; font: 600 .88rem/1 var(--ui); cursor: pointer;
+  padding: .64rem 1.7rem; border: 0; border-radius: 9px;
+  background: var(--gold); color: #1b1405; font: 600 .94rem/1 var(--ui); cursor: pointer;
+  letter-spacing: -.005em; box-shadow: 0 7px 20px -9px rgba(212,162,76,.6);
 }
 .play:hover { background: #e0b05f }
 
@@ -177,7 +180,7 @@ img { display: block }
 
 /* ---------- page rhythm ----------
    One rule owns vertical spacing between blocks. Nothing else sets a top margin. */
-.page { max-width: 1280px; margin: 0 auto; padding: 0 1.5rem 5rem }
+.page { max-width: 1280px; margin: 0 auto; padding: 0 1.5rem 3rem }
 section { margin-top: 3.6rem }
 section.first { margin-top: 0 }
 
@@ -340,7 +343,6 @@ section.divide::before {
 .resbar { display: flex; align-items: center; gap: .8rem; margin-bottom: 1.15rem }
 .resbar .count { font-size: .88rem; color: var(--dim) }
 .results { display: grid; grid-template-columns: repeat(auto-fill, minmax(292px,1fr)); gap: .9rem }
-.noresult { padding: 3rem 0; text-align: center; color: var(--dimmer) }
 
 /* Active filters, echoed above the results so the current view is legible without reading the
    sidebar, and each one removable where you are looking. */
@@ -402,12 +404,21 @@ section.divide::before {
 .support p { margin: 0; color: #c3c9d5; font-size: .95rem }
 .support .acts { margin-top: 1.5rem; display: flex; gap: .55rem }
 
-/* ---------- footer ----------
+/* ---------- status bar ----------
    The catalogue figures live here rather than in a row of big numbers on the page. They are
-   reference, not a headline. */
-footer { max-width: 1280px; margin: 0 auto; padding: 1.4rem 1.5rem 3rem;
+   reference, not a headline.
+
+   Pinned to the bottom edge rather than left to fall wherever the content ends. A short page put it
+   two thirds of the way down with the frame's own background under it, and that gap is most of what
+   made a window full of pages read as a document rather than as an application.
+
+   The inline padding puts the figures on the same 1280px measure as the page, so the first one lines
+   up with the first word above it at any window width. */
+footer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 80; height: 40px;
+  padding-inline: max(1.5rem, calc((100% - 1280px) / 2 + 1.5rem));
   border-top: 1px solid var(--line-soft);
-  display: flex; flex-wrap: wrap; gap: .4rem 1.6rem;
+  background: rgba(20,23,28,.86); backdrop-filter: blur(14px) saturate(1.2);
+  display: flex; align-items: center; gap: .4rem 1.6rem;
   color: #4b5262; font-size: .8rem }
 footer .figs { display: flex; gap: 1.1rem }
 footer .figs b { color: var(--dim); font-weight: 500 }
@@ -416,7 +427,7 @@ footer .note { margin-left: auto }
 /* ---------- not found / not built ----------
    Full bleed, sliding under the floating bar. The veil is transparent across the middle so the
    artwork keeps its subject, and opaque at the bottom where the copy sits. */
-.notfound { position: relative; margin-top: -84px; min-height: calc(100vh - 84px);
+.notfound { position: relative; margin-top: -84px; min-height: calc(100vh - 40px);
   display: flex; align-items: flex-end; overflow: hidden }
 .notfound .bg { position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: cover; object-position: center center }
@@ -484,7 +495,9 @@ footer .note { margin-left: auto }
    Sits above the page on every screen. Blurple, because the point is that it is recognisably
    Discord before anyone reads it. */
 .fab {
-  position: fixed; right: 22px; bottom: 22px; z-index: 90;
+  /* Clears the status bar. It used to sit on the page's own last inch, which was empty; now that
+     inch belongs to the bar. */
+  position: fixed; right: 22px; bottom: 56px; z-index: 90;
   display: flex; align-items: center; gap: .55rem;
   padding: .7rem 1.15rem; border-radius: 999px;
   background: #5865f2; color: #fff; font: 600 .88rem/1 var(--ui);
@@ -503,7 +516,6 @@ footer .note { margin-left: auto }
 .spinner { width: 30px; height: 30px; border-radius: 50%;
   border: 2px solid var(--line); border-top-color: var(--gold);
   animation: spin .75s linear infinite }
-@keyframes spin { to { transform: rotate(360deg) } }
 /* Fixed height and no transform: the block must not move when its text changes, or every swap reads
    as a jump. The fade is opacity only, and the server answers 204 when nothing changed so it does
    not replay on every poll. */
@@ -516,11 +528,23 @@ footer .note { margin-left: auto }
 .splash .bar i { display: block; height: 100%; border-radius: 999px;
   background: linear-gradient(90deg, var(--gold-2), var(--gold)); transition: width .3s linear }
 .splash .bar.idle i { width: 34% !important; animation: sweep 1.2s ease-in-out infinite }
+
+/* ---------- launcher ----------
+   The same screen at a smaller scale: this window is 460px wide and says one sentence, so the
+   application's 34rem measure and its flavour quotes have nowhere to go. */
+.splash.launch { gap: .5rem; padding: 0 1.6rem }
+.wxl-shown .splash.launch { animation: rise .3s cubic-bezier(.16,1,.3,1) both }
+.splash.launch .logo { width: 44px; height: 44px; margin-bottom: 0 }
+.splash.launch .name { font-size: 1rem }
+.splash.launch #step { width: 100%; text-align: center }
+.splash.launch .step { margin: .2rem 0 0; color: var(--dim); font-size: .88rem }
+.splash.launch .bytes { margin: .5rem 0 0; color: var(--dimmer); font-size: .78rem;
+  font-variant-numeric: tabular-nums }
+.splash.launch .fail { margin: .7rem 0 0; color: var(--red); font-size: .82rem }
 .splash .say { margin: .2rem 0 .3rem; font-size: 1.05rem; line-height: 1.5; color: var(--text);
   animation: fade .45s ease-out }
 .splash .who { margin: 0; font-size: .84rem; color: var(--gold); opacity: .8 }
 .splash .step { margin: 1.5rem 0 0; font-size: .76rem; color: #4b5262 }
-@keyframes fade { from { opacity: 0 } to { opacity: 1 } }
 
 /* ---------- listing ---------- */
 .listing-hero { position: relative; height: 420px; overflow: hidden;
@@ -632,7 +656,6 @@ aside.panel li.bad code { color: var(--red) }
 .dlbar i::after { content: ""; position: absolute; inset: 0;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,.28), transparent);
   animation: sheen 1.8s ease-in-out infinite }
-@keyframes sheen { from { transform: translateX(-100%) } to { transform: translateX(100%) } }
 
 .dlbar.idle i { width: 34% !important; animation: sweep 1.2s ease-in-out infinite }
 .dlbar.idle i::after { animation: none }
@@ -647,12 +670,23 @@ aside.panel li.bad code { color: var(--red) }
 .dlqueue .qitem { padding: .2rem .55rem; border-radius: 999px; border: 1px solid var(--line);
   font-size: .78rem; color: var(--dimmer) }
 
-.dlempty { display: flex; flex-direction: column; align-items: center; gap: .3rem;
+/* ---------- nothing here ----------
+   One shape for every "there is nothing" in the app: an icon, a statement, a sentence saying what
+   would put something here, and an action when there is one to offer. Named for what it says rather
+   than for where it first appeared, because the download centre, the library and the store all reach
+   for it and only one of them is a download centre. */
+.empty { display: flex; flex-direction: column; align-items: center; gap: .3rem;
   padding: 2.1rem 0 1.9rem; text-align: center }
-.dlempty svg { width: 30px; height: 30px; color: var(--dimmer); opacity: .55;
+.empty svg { width: 30px; height: 30px; color: var(--dimmer); opacity: .55;
   margin-bottom: .4rem }
-.dlempty b { font-weight: 600 }
-.dlempty span { color: var(--dimmer); font-size: .86rem; max-width: 42ch }
+.empty b { font-weight: 600 }
+.empty span { color: var(--dimmer); font-size: .86rem; max-width: 46ch }
+.empty code { font-size: .85em; padding: .05rem .3rem; border-radius: 4px;
+  background: rgba(255,255,255,.06); color: var(--dim) }
+
+/* The same block with no panel around it, for a section that is empty rather than a panel that is.
+   It drops the icon: two of them on one screen turn a statement into decoration. */
+.empty.bare { padding: 2.4rem 0 }
 
 /* Rows shared by the pending queue and the history, so both read like the rest of the app. */
 .hist .row { display: flex; align-items: center; gap: .8rem; padding: .75rem .95rem;
@@ -705,6 +739,83 @@ aside.panel li.bad code { color: var(--red) }
   cursor: pointer; font-size: .84rem; color: var(--dim); text-align: left }
 .cremember input { width: 15px; height: 15px; accent-color: var(--gold); cursor: pointer }
 .cfoot { margin: 1.3rem 0 0; font-size: .78rem; color: var(--dimmer) }
+
+/* ---------- first run ----------
+   The profile question's box, widened and given room for fields. Left-aligned inside, because a
+   centred label above a text input reads as decoration rather than as something to fill in. */
+.welcome { max-width: 520px; text-align: left }
+/* The window itself appears without ceremony. Everything that moves, moves inside the page. */
+.welcome img { margin: 0 auto .9rem }
+.welcome h1, .welcome > p { text-align: center }
+.welcome h1 em { font-style: normal; color: var(--gold) }
+.welcome > p { margin: .4rem 0 1.8rem }
+
+/* The card, then its questions one after another, so the eye starts at the first field instead of
+   everywhere at once. Short delays: this is a first impression, not a title sequence.
+
+   Every rule here is under `.wxl-shown`, the class the shell sets once the window is on screen. The
+   window is created hidden, so an animation left to start on its own starts against a window nobody
+   is looking at yet. Keeping the default state unanimated also means a page opened outside the app,
+   or one whose binding never answered, is plain rather than blank. */
+.wxl-shown .welcome { animation: rise .5s cubic-bezier(.16,1,.3,1) both }
+.wxl-shown .welcome .wstep,
+.wxl-shown .welcome .install { animation: rise .55s cubic-bezier(.16,1,.3,1) both }
+.wxl-shown .welcome .wstep:nth-of-type(1) { animation-delay: .14s }
+.wxl-shown .welcome .wstep:nth-of-type(2) { animation-delay: .27s }
+.wxl-shown .welcome .wstep:nth-of-type(3) { animation-delay: .40s }
+.wxl-shown .welcome .install { animation-delay: .53s }
+
+.wstep { margin-bottom: 1.5rem }
+.wstep > label { display: flex; align-items: baseline; font-size: .9rem; font-weight: 600;
+  margin-bottom: .45rem }
+
+/* Pushed to the far end of the label so it reads as an answer to it. Empty until the field has been
+   posted, and an empty span occupies nothing, so the row does not move when the first one arrives. */
+.wsaid { margin-left: auto; font-weight: 400; font-size: .78rem; animation: fade .25s ease-out }
+.wsaid.ok  { color: var(--green) }
+.wsaid.bad { color: var(--red) }
+.wstep .val { display: flex; align-items: center; gap: .5rem }
+.wstep .val input { flex: 1; min-width: 0; padding: .55rem .75rem; border-radius: 8px;
+  border: 1px solid var(--line); background: #0e1015; color: var(--text);
+  font: inherit; font-size: .89rem }
+.wstep .val input:focus { outline: 0; border-color: var(--gold-2);
+  box-shadow: 0 0 0 3px rgba(212,162,76,.12) }
+.wstep .val .browse { flex: none; padding: .55rem .85rem; border-radius: 8px;
+  border: 1px solid var(--line); background: transparent; color: var(--dim);
+  font: inherit; font-size: .84rem; cursor: pointer }
+.wstep .val .browse:hover { color: var(--text); border-color: #343b4a }
+.whint { display: block; margin-top: .4rem; color: var(--dimmer); font-size: .8rem }
+
+/* The switch sits opposite its label rather than under it: it is an answer, not a field. */
+.wrow { display: flex; align-items: center; gap: 1.2rem }
+.wrow > div { flex: 1 }
+.wrow > div > label { display: block; font-size: .9rem; font-weight: 600; margin-bottom: .2rem }
+
+/* One line per statement. Side by side they read as a single sentence that happens to change
+   colour half way through, which is how five separate facts became one unreadable strip. */
+.wverdict { display: flex; flex-direction: column; gap: .25rem; margin-top: .55rem;
+  font-size: .81rem; animation: verdict .3s cubic-bezier(.16,1,.3,1) }
+.wverdict .ok   { color: var(--green) }
+.wverdict .warn { color: var(--gold) }
+.wverdict .bad  { color: var(--red) }
+.wverdict .note { color: var(--dimmer) }
+
+/* Offered, not demanded: the form works without it, so it reads as an action rather than as a step
+   that has been skipped. */
+.wfix { align-self: flex-start; margin-top: .45rem; padding: .42rem .9rem; border-radius: 8px;
+  border: 1px solid var(--gold-2); background: transparent; color: var(--gold);
+  font: 600 .82rem/1 var(--ui); cursor: pointer; transition: background .12s }
+.wfix:hover { background: rgba(212,162,76,.12) }
+.wverdict .job { margin-top: .3rem }
+
+/* The store's install button was drawn for a <div>. On a <button> it keeps the user agent's border
+   and shrinks to its own text, which is what made it look like a stray next to the rest of the app.
+   Squared up here rather than in `.install`, so nothing that already uses it moves. */
+.welcome .install { width: 100%; margin-top: .6rem; padding: .78rem; border: 0;
+  font: 600 .95rem/1 var(--ui); letter-spacing: -.005em;
+  transition: background .12s, transform .12s }
+.welcome .install:hover { background: #e0b05f }
+.welcome .install:active { transform: translateY(1px) }
 
 /* ---------- page band ----------
    Shared by the working pages. Short on purpose: the content below it is the reason you came. */
@@ -791,13 +902,10 @@ aside.panel li.bad code { color: var(--red) }
 
 /* No Content-Length means no honest percentage, so the bar sweeps rather than inventing one. */
 .job .bar.idle i { width: 35% !important; animation: sweep 1.1s ease-in-out infinite }
-@keyframes sweep {
-  0%   { transform: translateX(-100%) }
-  100% { transform: translateX(340%) }
-}
 .health { margin-top: 1.1rem; font-size: .84rem }
 .health .ok { color: var(--green); margin: 0 }
 .problems { list-style: none; padding: 0; margin: 0 }
 .problems li { padding: .25rem 0; color: var(--gold); display: block }
 .problems li.error { color: var(--red) }
+
 ]]

@@ -21,11 +21,18 @@ local M = {}
 -- destroys a click before it can be sent.
 --
 -- Anything served out of a static directory is already past this, because static files are resolved
--- before `before` runs. This list is for the two the shell serves from code.
+-- before `before` runs. This list is for the ones the shell serves from code.
 local UNGATED = {
   ["/boot/status"] = true,
   ["/theme.css"]   = true,
 }
+
+--- A job reports on work the page that started it is still waiting for, so it has to be readable
+--- from behind a gate: the first-run form sets the client up before it has answered the question
+--- that raised the gate. Not a key in the table above because the id is in the path.
+local function ungated(path)
+  return UNGATED[path] ~= nil or path:find("^/jobs/") ~= nil
+end
 
 
 --- Runs on the worker thread. Owns the database, the modules and the socket.
@@ -50,7 +57,6 @@ function M.serve(port, token, opts)
   local jobs     = require("core.jobs")
   local notify   = require("core.notify")
   local launch   = require("core.launch")
-  local update   = require("core.update")
   local mediator = require("core.mediator")
   require("core.helpers").install()
 
@@ -79,6 +85,10 @@ function M.serve(port, token, opts)
       flip = true,
     },
     store = "https://bnetcmsus-a.akamaihd.net/cms/blog_header/e8/E8WQFI083QTW1738635431840.png",
+    downloads =
+      "https://bnetcmsus-a.akamaihd.net/cms/blog_header/d8/D84JV9ZJWDS01772587429618.png",
+    settings =
+      "https://bnetcmsus-a.akamaihd.net/cms/blog_header/zq/ZQIXYN40KUPU1764984459732.png",
   }
 
   local available = tools.detect { "python", "git" }
@@ -121,13 +131,19 @@ function M.serve(port, token, opts)
   local shown = { idx = -1, step = nil }
 
   app.before = function(req, res)
-    -- A request reaching here proves the tree the bootstrap picked can load every module, open the
-    -- database and bind its socket. That is what an update has to demonstrate before it is kept, so
-    -- this is where it is declared healthy. Idempotent, and first: the splash is a request too, and
-    -- an update that only ever got as far as the splash still booted.
-    update.confirm()
+    -- Before the gates, so it is set for every request that can end up rendering anything.
+    page.begin(req)
 
-    if UNGATED[req.path] then return false end
+    -- A navigation is answered with the part of the document that changes, so htmx is told here
+    -- where to put it. On the response rather than on the markup: an `hx-target` attribute is
+    -- inherited by everything under it, and most fragments in the app mean "replace me" by leaving
+    -- the target out entirely.
+    if req.boosted then
+      res:header("HX-Retarget", "#view")
+      res:header("HX-Reswap", "outerHTML show:window:top")
+    end
+
+    if ungated(req.path) then return false end
 
     if not boot.ready() then
       local step, done, total = boot.phase()
@@ -140,18 +156,30 @@ function M.serve(port, token, opts)
       return true
     end
 
-    -- Past the splash, so the startup fetch has landed and there is a real page coming to carry a
-    -- toast. Idempotent, and it queues rather than renders: what it found has no request of its own
-    -- to ride on, because the fetch that found it was answering nobody.
-    update.announce()
+    -- Questions that have to be answered before the app opens: today the first-run form and the
+    -- profile choice, tomorrow a licence or a migration notice. Core knows only that questions
+    -- exist, that each owns a stretch of the URL space, and that the first one still unanswered is
+    -- the one to put on screen. It does not know what any of them ask.
+    --
+    -- A collection rather than a single provider, because there is no reason two modules cannot both
+    -- want something before the hub opens. When it was one slot, whoever held it had to answer for
+    -- everyone, and unrelated questions ended up branching inside one module.
+    local questions = mediator.collect("startup.question")
 
-    -- A module may need an answer before the app opens: today it is which profile to use, tomorrow
-    -- it could be a licence or a first-run path. Core knows only that a gate can exist and that it
-    -- returns a page. It does not know the question, and it does not know who is asking.
-    local gate = mediator.ask("startup.gate", req.path)
-    if gate then
-      res:html(gate)
-      return true
+    -- A question's own flow has to reach its own handlers, or it would answer the very posts that
+    -- fill it in. Declared once, here, instead of a path test written again inside each module that
+    -- asks something: two copies of this rule is how a poll that belonged to a form ended up being
+    -- served the form.
+    for _, q in ipairs(questions) do
+      if q.owns and req.path:sub(1, #q.owns) == q.owns then return false end
+    end
+
+    for _, q in ipairs(questions) do
+      local asked = q.render and q.render()
+      if asked then
+        res:html(asked)
+        return true
+      end
     end
 
     return false
@@ -280,7 +308,7 @@ function M.run()
     uv2.chdir(cwd)
     package.path = "./?.lua;./?/init.lua;" .. package.path
 
-    require("core.log").install(cwd .. "/hub.log", "server")
+    require("core.log").install(require("core.release").log(), "server")
 
     local ok, err = xpcall(function()
       require("core.app").serve(port, token)
@@ -292,15 +320,33 @@ function M.run()
 
   webview.setup("deps/webview")
 
+  -- Hidden and dark from the moment it exists, which is the only way there is no white frame: the
+  -- window is created visible and nothing the caller does afterwards is early enough.
   local win = webview.open {
     title = "WarcraftXL Hub", width = 1280, height = 880, debug = true,
+    hidden = true, background = { 0x10, 0x12, 0x16 },
   }
   win:icon("assets/logo.ico")
 
-  -- Off screen until a document has been parsed, and dark underneath for every moment after that
-  -- where the frame is visible and the view has not caught up.
-  win:hide()
-  win:background(0x10, 0x12, 0x16)
+  -- Back where it was left, if it was ever left anywhere. Applied while the window is still hidden,
+  -- so nobody watches it jump from the middle of the screen to its corner. The size above is only
+  -- the first launch's answer.
+  local geometry = require("core.geometry")
+  local remembered = geometry.read()
+  if remembered then
+    win:place(remembered)
+    print(("window restored to %dx%d at %d,%d%s"):format(
+      remembered.w, remembered.h, remembered.x, remembered.y,
+      remembered.maximised and ", maximised" or ""))
+  end
+
+  -- Asked for by the page, because the page is the only part of this that gets told when anything
+  -- happened. Reading the placement is cheap and writing only happens when it has actually changed,
+  -- so a chatty caller costs nothing.
+  win:bind("wxlGeom", function()
+    geometry.write(win:placement())
+    return "null"
+  end)
   print("window created, hidden until the first page reports in")
 
   -- The one thing the UI thread does that is not "show a page". A folder dialog is modal and has to
@@ -327,12 +373,48 @@ function M.run()
   --
   -- It fires on the browser's own error page too, so a hub whose server never came up still shows a
   -- window saying so instead of nothing at all.
+  -- `init` runs on every navigation, so this fires on each document. Only the first one is news;
+  -- the rest would just be a line saying the window is still visible.
+  local visible = false
   win:bind("wxlReady", function()
     win:show()
-    print("window shown")
+    if not visible then visible = true; print("window shown") end
     return "null"
   end)
-  win:init("addEventListener('DOMContentLoaded',function(){window.wxlReady&&wxlReady()})")
+  -- The class it leaves behind is what any entrance animation hangs off. A CSS animation starts when
+  -- the style is first resolved, which here is while the window is still hidden, so an animation
+  -- written the ordinary way has already run part of its course by the time anyone can see it: the
+  -- top of the page looks placed and the bottom snaps into position.
+  --
+  -- Set on failure as well as on success, because the stylesheet treats its absence as "do not
+  -- animate" rather than as "stay invisible". A binding that never answers must cost the page its
+  -- entrance, never its content.
+  -- The second half of this is what remembers the window. There is no close event to hang it on, so
+  -- it reports at the three moments the answer can have changed: a document arrived, a drag or a
+  -- resize came to rest, and the window lost focus, which is what happens on the way to closing it.
+  win:init([[
+addEventListener('DOMContentLoaded', function () {
+  var lit = function () { document.documentElement.classList.add('wxl-shown') };
+  window.wxlReady ? wxlReady().then(lit, lit) : lit();
+
+  var save = function () { window.wxlGeom && wxlGeom() };
+  var idle;
+  addEventListener('resize', function () { clearTimeout(idle); idle = setTimeout(save, 400) });
+  addEventListener('blur', save);
+  save();
+});
+]])
+
+  -- Hidden again, and not out of superstition. `webview_get_native_handle` can still answer nothing
+  -- straight after create, and a hide that found no handle did nothing at all: that is the window
+  -- that turned up showing its background colour and no page. Here the handle certainly exists, and
+  -- the message loop has not started, so nothing has been able to paint yet either way.
+  win:hide()
+
+  -- And only now is there something at the other end to navigate to.
+  if not require("core.server").wait(port) then
+    print("the server did not come up in time, showing whatever the browser makes of that")
+  end
 
   win:navigate(("http://127.0.0.1:%d/?token=%s"):format(port, token))
   print(("navigating to 127.0.0.1:%d"):format(port))

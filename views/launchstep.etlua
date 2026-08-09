@@ -1,0 +1,19 @@
+<p class="step"><%= state.phase %></p>
+
+<div class="bar<%= known and "" or " idle" %>">
+  <i style="width:<%= pct %>%"></i>
+</div>
+
+<% if size then %><p class="bytes"><%= size %></p><% end %>
+
+<% if state.failed then %>
+  <p class="fail"><%= state.failed %></p>
+<% elseif state.ready then %>
+  <% --[[ Called from the page rather than from Lua because starting the hub and stopping the message
+          loop both belong to the UI thread, and the thread that decided has no way to reach it. The
+          flag matters: the poll would otherwise fire this again every quarter second for as long as
+          the window survives the handover. ]] %>
+  <script>
+    if (!window.__wxlStarted) { window.__wxlStarted = 1; window.wxlStart && wxlStart(); }
+  </script>
+<% end %>

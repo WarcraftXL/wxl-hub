@@ -26,7 +26,9 @@ M.scoped = {
 
 M.defaults = {
   active_profile = "1",
-  developer      = "1",
+  -- Off. It adds the author-facing half of the app to the navigation, which is noise for everyone
+  -- who came to install modules rather than write them.
+  developer      = "0",
   -- Ask which profile to use at startup. Off once someone has said "remember my choice", and
   -- turned back on from the profiles page when they change their mind.
   ask_profile    = "1",
